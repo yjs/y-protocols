@@ -1,0 +1,31 @@
+{
+  "name": "y-protocols",
+  "version": "1.0.0",
+  "description": "Yjs encoding protocols",
+  "main": "",
+  "scripts": {
+    "dist": "rollup -c",
+    "debug": "live-server --port=3443 --entry-file=test.html",
+    "test": "npm run dist && node ./dist/test.js",
+    "trace-deopt": "clear && rollup -c  && node --trace-deopt dist/test.js",
+    "trace-opt": "clear && rollup -c  && node --trace-opt dist/test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/y-js/y-protocols.git"
+  },
+  "keywords": [
+    "Yjs"
+  ],
+  "author": "Kevin Jahns <kevin.jahns@protonmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/y-js/y-protocols/issues"
+  },
+  "homepage": "https://github.com/y-js/y-protocols#readme",
+  "dependencies": {},
+  "devDependencies": {
+    "rollup": "^1.1.2",
+    "rollup-cli": "^1.0.9"
+  }
+}
