@@ -5,35 +5,31 @@
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 import * as Y from 'yjs'
-import * as stringify from './utils/structStringify.js'
 import { readStateMap, writeStateMap } from './utils/StateStore.js'
 import { writeDeleteStore, readDeleteStore, stringifyDeleteStore } from './utils/DeleteStore.js'
-import { registerStruct, getStruct } from './utils/structReferences.js'
-// TODO: do not export, nor use in yjs
-export { getStruct, getStructReference, registerStruct } from './utils/structReferences.js'
 
-registerStruct(0, Y.GC)
-registerStruct(1, Y.ItemJSON)
-registerStruct(2, Y.ItemString)
-registerStruct(3, Y.ItemFormat)
-registerStruct(4, Y.Delete)
+Y.registerStruct(0, Y.GC)
+Y.registerStruct(1, Y.ItemJSON)
+Y.registerStruct(2, Y.ItemString)
+Y.registerStruct(3, Y.ItemFormat)
+Y.registerStruct(4, Y.Delete)
 
-registerStruct(5, Y.Array)
-registerStruct(6, Y.Map)
-registerStruct(7, Y.Text)
-registerStruct(8, Y.XmlFragment)
-registerStruct(9, Y.XmlElement)
-registerStruct(10, Y.XmlText)
-registerStruct(11, Y.XmlHook)
-registerStruct(12, Y.ItemEmbed)
-registerStruct(13, Y.ItemBinary)
+Y.registerStruct(5, Y.Array)
+Y.registerStruct(6, Y.Map)
+Y.registerStruct(7, Y.Text)
+Y.registerStruct(8, Y.XmlFragment)
+Y.registerStruct(9, Y.XmlElement)
+Y.registerStruct(10, Y.XmlText)
+Y.registerStruct(11, Y.XmlHook)
+Y.registerStruct(12, Y.ItemEmbed)
+Y.registerStruct(13, Y.ItemBinary)
 
 /**
  * @typedef {Map<number, number>} StateMap
  */
 
 /**
- * Core Yjs only defines three message types:
+ * Core Yjs defines three message types:
  * • YjsSyncStep1: Includes the State Set of the sending client. When received, the client should reply with YjsSyncStep2.
  * • YjsSyncStep2: Includes all missing structs and the complete delete set. When received, the the client is assured that
  *   it received all information from the remote client.
@@ -71,12 +67,12 @@ export const stringifyStructs = (decoder, y) => {
   const len = decoding.readUint32(decoder)
   for (let i = 0; i < len; i++) {
     let reference = decoding.readVarUint(decoder)
-    let Constr = getStruct(reference)
+    let Constr = Y.getStruct(reference)
     let struct = new Constr()
     let missing = struct._fromBinary(y, decoder)
     let logMessage = '  ' + struct._logString()
     if (missing.length > 0) {
-      logMessage += ' .. missing: ' + missing.map(stringify.stringifyItemID).join(', ')
+      logMessage += ' .. missing: ' + missing.map(Y.stringifyItemID).join(', ')
     }
     str += logMessage + '\n'
   }
@@ -123,12 +119,7 @@ export const writeStructs = (encoder, y, ss) => {
  * @param {decoding.Decoder} decoder
  * @param {Y.Y} y
  */
-export const readStructs = (decoder, y) => {
-  const len = decoding.readUint32(decoder)
-  for (let i = 0; i < len; i++) {
-    Y.integrateRemoteStruct(decoder, y)
-  }
-}
+export const readStructs = Y.integrateRemoteStructs
 
 /**
  * Read SyncStep1 and return it as a readable string.
