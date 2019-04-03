@@ -5,24 +5,6 @@
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 import * as Y from 'yjs'
-import { readStateMap, writeStateMap } from './utils/StateStore.js'
-import { writeDeleteStore, readDeleteStore, stringifyDeleteStore } from './utils/DeleteStore.js'
-
-Y.registerStruct(0, Y.GC)
-Y.registerStruct(1, Y.ItemJSON)
-Y.registerStruct(2, Y.ItemString)
-Y.registerStruct(3, Y.ItemFormat)
-Y.registerStruct(4, Y.Delete)
-
-Y.registerStruct(5, Y.Array)
-Y.registerStruct(6, Y.Map)
-Y.registerStruct(7, Y.Text)
-Y.registerStruct(8, Y.XmlFragment)
-Y.registerStruct(9, Y.XmlElement)
-Y.registerStruct(10, Y.XmlText)
-Y.registerStruct(11, Y.XmlHook)
-Y.registerStruct(12, Y.ItemEmbed)
-Y.registerStruct(13, Y.ItemBinary)
 
 /**
  * @typedef {Map<number, number>} StateMap
@@ -58,70 +40,6 @@ export const messageYjsSyncStep2 = 1
 export const messageYjsUpdate = 2
 
 /**
- * @param {decoding.Decoder} decoder
- * @param {Y.Y} y
- * @return {string}
- */
-export const stringifyStructs = (decoder, y) => {
-  let str = ''
-  const len = decoding.readUint32(decoder)
-  for (let i = 0; i < len; i++) {
-    let reference = decoding.readVarUint(decoder)
-    let Constr = Y.getStruct(reference)
-    let struct = new Constr()
-    let missing = struct._fromBinary(y, decoder)
-    let logMessage = '  ' + struct._logString()
-    if (missing.length > 0) {
-      logMessage += ' .. missing: ' + missing.map(Y.stringifyItemID).join(', ')
-    }
-    str += logMessage + '\n'
-  }
-  return str
-}
-
-/**
- * Write all Items that are not not included in ss to
- * the encoder object.
- *
- * @param {encoding.Encoder} encoder
- * @param {Y.Y} y
- * @param {StateMap} ss State Set received from a remote client. Maps from client id to number of created operations by client id.
- */
-export const writeStructs = (encoder, y, ss) => {
-  const lenPos = encoding.length(encoder)
-  encoding.writeUint32(encoder, 0)
-  let len = 0
-  for (let user of y.ss.state.keys()) {
-    let clock = ss.get(user) || 0
-    if (user !== Y.RootFakeUserID) {
-      const minBound = Y.createID(user, clock)
-      const overlappingLeft = y.os.findPrev(minBound)
-      const rightID = overlappingLeft === null ? null : overlappingLeft._id
-      if (rightID !== null && rightID.user === user && rightID.clock + overlappingLeft._length > clock) {
-        // TODO: only write partial content (only missing content)
-        // const struct = overlappingLeft._clonePartial(clock - rightID.clock)
-        const struct = overlappingLeft
-        struct._toBinary(encoder)
-        len++
-      }
-      y.os.iterate(minBound, Y.createID(user, Number.MAX_VALUE), struct => {
-        struct._toBinary(encoder)
-        len++
-      })
-    }
-  }
-  encoding.setUint32(encoder, lenPos, len)
-}
-
-/**
- * Read structs and delete operations from decoder and apply them on a shared document.
- *
- * @param {decoding.Decoder} decoder
- * @param {Y.Y} y
- */
-export const readStructs = Y.integrateRemoteStructs
-
-/**
  * Read SyncStep1 and return it as a readable string.
  *
  * @param {decoding.Decoder} decoder
@@ -146,18 +64,17 @@ export const stringifySyncStep1 = (decoder) => {
  */
 export const writeSyncStep1 = (encoder, y) => {
   encoding.writeVarUint(encoder, messageYjsSyncStep1)
-  writeStateMap(encoder, y.ss.state)
+  Y.writeStates(encoder, y.store)
 }
 
 /**
  * @param {encoding.Encoder} encoder
  * @param {Y.Y} y
- * @param {Map<number, number>} ss
+ * @param {Map<number, number>} sm
  */
-export const writeSyncStep2 = (encoder, y, ss) => {
+export const writeSyncStep2 = (encoder, y, sm) => {
   encoding.writeVarUint(encoder, messageYjsSyncStep2)
-  writeStructs(encoder, y, ss)
-  writeDeleteStore(encoder, y.ds)
+  Y.writeStructs(encoder, y.store, sm)
 }
 
 /**
@@ -168,83 +85,29 @@ export const writeSyncStep2 = (encoder, y, ss) => {
  * @param {Y.Y} y
  */
 export const readSyncStep1 = (decoder, encoder, y) =>
-  writeSyncStep2(encoder, y, readStateMap(decoder))
-
-/**
- * @param {decoding.Decoder} decoder
- * @param {Y.Y} y
- * @return {string}
- */
-export const stringifySyncStep2 = (decoder, y) => {
-  let str = '  == Sync step 2:\n'
-  str += ' + Structs:\n'
-  str += stringifyStructs(decoder, y)
-  // write DS to string
-  str += ' + Delete Set:\n'
-  str += stringifyDeleteStore(decoder)
-  return str
-}
+  writeSyncStep2(encoder, y, Y.readStatesAsMap(decoder))
 
 /**
  * Read and apply Structs and then DeleteStore to a y instance.
  *
  * @param {decoding.Decoder} decoder
  * @param {Y.Y} y
+ * @param {Y.Transaction} transaction
  */
-export const readSyncStep2 = (decoder, y) => {
-  readStructs(decoder, y)
-  readDeleteStore(decoder, y)
+export const readSyncStep2 = (decoder, y, transaction) => {
+  Y.readStructs(decoder, transaction, y.store)
 }
-
-/**
- * @param {decoding.Decoder} decoder
- * @param {Y.Y} y
- * @return {string}
- */
-export const stringifyUpdate = (decoder, y) =>
-  '  == Update:\n' + stringifyStructs(decoder, y)
 
 /**
  * @param {encoding.Encoder} encoder
- * @param {number} numOfStructs
- * @param {encoding.Encoder} updates
+ * @param {encoding.Encoder} update
  */
-export const writeUpdate = (encoder, numOfStructs, updates) => {
+export const writeUpdate = (encoder, update) => {
   encoding.writeVarUint(encoder, messageYjsUpdate)
-  encoding.writeUint32(encoder, numOfStructs)
-  encoding.writeBinaryEncoder(encoder, updates)
+  encoding.writeBinaryEncoder(encoder, update)
 }
 
-export const readUpdate = readStructs
-
-/**
- * @param {decoding.Decoder} decoder
- * @param {Y.Y} y
- * @return {string} The message converted to string
- */
-export const stringifySyncMessage = (decoder, y) => {
-  const messageType = decoding.readVarUint(decoder)
-  let stringifiedMessage
-  let stringifiedMessageType
-  switch (messageType) {
-    case messageYjsSyncStep1:
-      stringifiedMessageType = 'YjsSyncStep1'
-      stringifiedMessage = stringifySyncStep1(decoder)
-      break
-    case messageYjsSyncStep2:
-      stringifiedMessageType = 'YjsSyncStep2'
-      stringifiedMessage = stringifySyncStep2(decoder, y)
-      break
-    case messageYjsUpdate:
-      stringifiedMessageType = 'YjsUpdate'
-      stringifiedMessage = stringifyStructs(decoder, y)
-      break
-    default:
-      stringifiedMessageType = 'Unknown'
-      stringifiedMessage = 'Unknown'
-  }
-  return `Message ${stringifiedMessageType}:\n${stringifiedMessage}`
-}
+export const readUpdate = readSyncStep2
 
 /**
  * @param {decoding.Decoder} decoder A message received from another client
@@ -258,10 +121,10 @@ export const readSyncMessage = (decoder, encoder, y) => {
       readSyncStep1(decoder, encoder, y)
       break
     case messageYjsSyncStep2:
-      y.transact(() => readSyncStep2(decoder, y), true)
+      y.transact(transaction => readSyncStep2(decoder, y, transaction))
       break
     case messageYjsUpdate:
-      y.transact(() => readUpdate(decoder, y), true)
+      y.transact(transaction => readUpdate(decoder, y, transaction))
       break
     default:
       throw new Error('Unknown message type')
