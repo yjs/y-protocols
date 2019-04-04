@@ -2,8 +2,6 @@
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 import * as Y from 'yjs'
-import { writeStateMap, readStateMap } from './utils/StateStore.js'
-import { writeDeleteStore, readFreshDeleteStore } from './utils/DeleteStore.js'
 
 /**
  * @typedef {Object} HistorySnapshot
@@ -14,7 +12,7 @@ import { writeDeleteStore, readFreshDeleteStore } from './utils/DeleteStore.js'
 
 /**
  * @param {encoding.Encoder} encoder
- * @param {Y} y
+ * @param {Y.Y} y
  * @param {Map<number, string>} userMap
  */
 export const writeHistorySnapshot = (encoder, y, userMap) => {
