@@ -9,7 +9,7 @@ const messageUsersStateChanged = 0
 
 /**
  * @typedef {Object} UserStateUpdate
- * @property {number} UserStateUpdate.userID
+ * @property {number} UserStateUpdate.clientID
  * @property {number} UserStateUpdate.clock
  * @property {Object} UserStateUpdate.state
  */
@@ -23,8 +23,8 @@ export const writeUsersStateChange = (encoder, stateUpdates) => {
   encoding.writeVarUint(encoder, messageUsersStateChanged)
   encoding.writeVarUint(encoder, len)
   for (let i = 0; i < len; i++) {
-    const {userID, state, clock} = stateUpdates[i]
-    encoding.writeVarUint(encoder, userID)
+    const { clientID, state, clock } = stateUpdates[i]
+    encoding.writeVarUint(encoder, clientID)
     encoding.writeVarUint(encoder, clock)
     encoding.writeVarString(encoder, JSON.stringify(state))
   }
@@ -36,25 +36,25 @@ export const readUsersStateChange = (decoder, y) => {
   const removed = []
   const len = decoding.readVarUint(decoder)
   for (let i = 0; i < len; i++) {
-    const userID = decoding.readVarUint(decoder)
+    const clientID = decoding.readVarUint(decoder)
     const clock = decoding.readVarUint(decoder)
     const state = JSON.parse(decoding.readVarString(decoder))
-    const uClock = y.awarenessClock.get(userID) || 0
-    y.awarenessClock.set(userID, clock)
+    const uClock = y.awarenessClock.get(clientID) || 0
+    y.awarenessClock.set(clientID, clock)
     if (state === null) {
       // only write if clock increases. cannot overwrite
-      if (y.awareness.has(userID) && uClock < clock) {
-        y.awareness.delete(userID)
-        removed.push(userID)
+      if (y.awareness.has(clientID) && uClock < clock) {
+        y.awareness.delete(clientID)
+        removed.push(clientID)
       }
     } else if (uClock <= clock) { // allow to overwrite (e.g. when client was on, then offline)
-      if (y.awareness.has(userID)) {
-        updated.push(userID)
+      if (y.awareness.has(clientID)) {
+        updated.push(clientID)
       } else {
-        added.push(userID)
+        added.push(clientID)
       }
-      y.awareness.set(userID, state)
-      y.awarenessClock.set(userID, clock)
+      y.awareness.set(clientID, state)
+      y.awarenessClock.set(clientID, clock)
     }
   }
   if (added.length > 0 || updated.length > 0 || removed.length > 0) {
@@ -75,13 +75,13 @@ export const forwardUsersStateChange = (decoder, encoder) => {
   encoding.writeVarUint(encoder, messageUsersStateChanged)
   encoding.writeVarUint(encoder, len)
   for (let i = 0; i < len; i++) {
-    const userID = decoding.readVarUint(decoder)
+    const clientID = decoding.readVarUint(decoder)
     const clock = decoding.readVarUint(decoder)
     const state = decoding.readVarString(decoder)
-    encoding.writeVarUint(encoder, userID)
+    encoding.writeVarUint(encoder, clientID)
     encoding.writeVarUint(encoder, clock)
     encoding.writeVarString(encoder, state)
-    updates.push({userID, state: JSON.parse(state), clock})
+    updates.push({ clientID, state: JSON.parse(state), clock })
   }
   return updates
 }
@@ -100,7 +100,7 @@ export const readAwarenessMessage = (decoder, y) => {
 
 /**
  * @typedef {Object} UserState
- * @property {number} UserState.userID
+ * @property {number} UserState.clientID
  * @property {any} UserState.state
  * @property {number} UserState.clock
  */

@@ -60,21 +60,21 @@ export const stringifySyncStep1 = (decoder) => {
  * Create a sync step 1 message based on the state of the current shared document.
  *
  * @param {encoding.Encoder} encoder
- * @param {Y.Y} y
+ * @param {Y.StructStore} store
  */
-export const writeSyncStep1 = (encoder, y) => {
+export const writeSyncStep1 = (encoder, store) => {
   encoding.writeVarUint(encoder, messageYjsSyncStep1)
-  Y.writeStates(encoder, y.store)
+  Y.writeStates(encoder, store)
 }
 
 /**
  * @param {encoding.Encoder} encoder
- * @param {Y.Y} y
+ * @param {Y.StructStore} store
  * @param {Map<number, number>} sm
  */
-export const writeSyncStep2 = (encoder, y, sm) => {
+export const writeSyncStep2 = (encoder, store, sm) => {
   encoding.writeVarUint(encoder, messageYjsSyncStep2)
-  Y.writeStructs(encoder, y.store, sm)
+  Y.writeModel(encoder, store, sm)
 }
 
 /**
@@ -82,21 +82,19 @@ export const writeSyncStep2 = (encoder, y, sm) => {
  *
  * @param {decoding.Decoder} decoder The reply to the received message
  * @param {encoding.Encoder} encoder The received message
- * @param {Y.Y} y
+ * @param {Y.StructStore} store
  */
-export const readSyncStep1 = (decoder, encoder, y) =>
-  writeSyncStep2(encoder, y, Y.readStatesAsMap(decoder))
+export const readSyncStep1 = (decoder, encoder, store) =>
+  writeSyncStep2(encoder, store, Y.readStatesAsMap(decoder))
 
 /**
  * Read and apply Structs and then DeleteStore to a y instance.
  *
  * @param {decoding.Decoder} decoder
- * @param {Y.Y} y
  * @param {Y.Transaction} transaction
+ * @param {Y.StructStore} store
  */
-export const readSyncStep2 = (decoder, y, transaction) => {
-  Y.readStructs(decoder, transaction, y.store)
-}
+export const readSyncStep2 = Y.readModel
 
 /**
  * @param {encoding.Encoder} encoder
@@ -107,7 +105,7 @@ export const writeUpdate = (encoder, update) => {
   encoding.writeBinaryEncoder(encoder, update)
 }
 
-export const readUpdate = readSyncStep2
+export const readUpdate = Y.readModel
 
 /**
  * @param {decoding.Decoder} decoder A message received from another client
@@ -118,13 +116,15 @@ export const readSyncMessage = (decoder, encoder, y) => {
   const messageType = decoding.readVarUint(decoder)
   switch (messageType) {
     case messageYjsSyncStep1:
-      readSyncStep1(decoder, encoder, y)
+      readSyncStep1(decoder, encoder, y.store)
       break
     case messageYjsSyncStep2:
-      y.transact(transaction => readSyncStep2(decoder, y, transaction))
+      // @ts-ignore
+      y.transact(transaction => readSyncStep2(decoder, transaction, y.store))
       break
     case messageYjsUpdate:
-      y.transact(transaction => readUpdate(decoder, y, transaction))
+      // @ts-ignore
+      y.transact(transaction => readUpdate(decoder, transaction, y.store))
       break
     default:
       throw new Error('Unknown message type')

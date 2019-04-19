@@ -6,6 +6,12 @@ export default {
   input: files,
   output: {
     dir: './dist',
-    format: 'cjs'
+    format: 'cjs',
+    paths: path => {
+      if (/^lib0\//.test(path)) {
+        return `lib0/dist/${path.slice(5)}`
+      }
+      return path
+    }
   }
 }
