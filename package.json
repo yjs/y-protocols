@@ -1,14 +1,14 @@
 {
   "name": "y-protocols",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "description": "Yjs encoding protocols",
   "main": "",
   "scripts": {
     "dist": "rollup -c",
-    "debug": "live-server --port=3443 --entry-file=test.html",
-    "test": "npm run dist && node ./dist/test.js",
-    "trace-deopt": "clear && rollup -c  && node --trace-deopt dist/test.js",
-    "trace-opt": "clear && rollup -c  && node --trace-opt dist/test.js"
+    "test": "echo 'should lint here'",
+    "lint": "standard",
+    "preversion": "npm run test",
+    "version": "npm run dist"
   },
   "repository": {
     "type": "git",
@@ -25,7 +25,13 @@
   "homepage": "https://github.com/y-js/y-protocols#readme",
   "dependencies": {},
   "devDependencies": {
+    "lib0": "0.0.1",
     "rollup": "^1.1.2",
-    "rollup-cli": "^1.0.9"
+    "rollup-cli": "^1.0.9",
+    "standard": "^12.0.1"
+  },
+  "peerDependenies": {
+    "lib0": "^0.0.1",
+    "yjs": "*"
   }
 }
