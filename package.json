@@ -3,6 +3,13 @@
   "version": "0.0.1",
   "description": "Yjs encoding protocols",
   "main": "",
+  "files": [
+    "dist/*",
+    "examples/*",
+    "docs/*",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "dist": "rollup -c",
     "test": "echo 'should lint here'",
@@ -28,7 +35,8 @@
     "lib0": "0.0.1",
     "rollup": "^1.1.2",
     "rollup-cli": "^1.0.9",
-    "standard": "^12.0.1"
+    "standard": "^12.0.1",
+    "yjs": "file:../yjs"
   },
   "peerDependenies": {
     "lib0": "^0.0.1",

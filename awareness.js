@@ -2,10 +2,47 @@
  * @module awareness-protocol
  */
 
+import * as Y from 'yjs'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
+import * as error from 'lib0/error.js'
 
 const messageUsersStateChanged = 0
+
+/**
+ * This is just a template for a Yjs instance with awareness.
+ * We do not really extend it.
+ */
+export class YWithAwareness extends Y.Y {
+  constructor () {
+    super()
+    /**
+     * @type {Object<string,Object>}
+     */
+    this._localAwarenessState = {}
+    this.awareness = new Map()
+    this.awarenessClock = new Map()
+  }
+  /**
+   * @return {Object<string,Object>}
+   */
+  getLocalAwarenessInfo () {
+    throw error.methodUnimplemented()
+  }
+  /**
+   * @return {Map<string,Object<string,Object>>}
+   */
+  getAwarenessInfo () {
+    throw error.methodUnimplemented()
+  }
+  /**
+   * @param {string} field
+   * @param {Object} value
+   */
+  setAwarenessField (field, value) {
+    throw error.methodUnimplemented()
+  }
+}
 
 /**
  * @typedef {Object} UserStateUpdate
@@ -30,6 +67,10 @@ export const writeUsersStateChange = (encoder, stateUpdates) => {
   }
 }
 
+/**
+ * @param {decoding.Decoder} decoder
+ * @param {YWithAwareness} y
+ */
 export const readUsersStateChange = (decoder, y) => {
   const added = []
   const updated = []
@@ -58,6 +99,7 @@ export const readUsersStateChange = (decoder, y) => {
     }
   }
   if (added.length > 0 || updated.length > 0 || removed.length > 0) {
+    // @ts-ignore We know emit is defined
     y.emit('awareness', [{
       added, updated, removed
     }])
@@ -88,7 +130,7 @@ export const forwardUsersStateChange = (decoder, encoder) => {
 
 /**
  * @param {decoding.Decoder} decoder
- * @param {Y} y
+ * @param {YWithAwareness} y
  */
 export const readAwarenessMessage = (decoder, y) => {
   switch (decoding.readVarUint(decoder)) {
@@ -111,6 +153,9 @@ export const readAwarenessMessage = (decoder, y) => {
  * @return {Array<UserState>} Array of state updates
  */
 export const forwardAwarenessMessage = (decoder, encoder) => {
+  /**
+   * @type {Array<UserState>}
+   */
   let s = []
   switch (decoding.readVarUint(decoder)) {
     case messageUsersStateChanged:
