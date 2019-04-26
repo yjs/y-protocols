@@ -111,8 +111,9 @@ export const readUpdate = Y.readModel
  * @param {decoding.Decoder} decoder A message received from another client
  * @param {encoding.Encoder} encoder The reply message. Will not be sent if empty.
  * @param {Y.Y} y
+ * @param {any} origin
  */
-export const readSyncMessage = (decoder, encoder, y) => {
+export const readSyncMessage = (decoder, encoder, y, origin) => {
   const messageType = decoding.readVarUint(decoder)
   switch (messageType) {
     case messageYjsSyncStep1:
@@ -120,11 +121,11 @@ export const readSyncMessage = (decoder, encoder, y) => {
       break
     case messageYjsSyncStep2:
       // @ts-ignore
-      y.transact(transaction => readSyncStep2(decoder, transaction, y.store))
+      y.transact(transaction => readSyncStep2(decoder, transaction, y.store), origin)
       break
     case messageYjsUpdate:
       // @ts-ignore
-      y.transact(transaction => readUpdate(decoder, transaction, y.store))
+      y.transact(transaction => readUpdate(decoder, transaction, y.store), origin)
       break
     default:
       throw new Error('Unknown message type')
