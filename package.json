@@ -32,11 +32,9 @@
   "homepage": "https://github.com/y-js/y-protocols#readme",
   "dependencies": {},
   "devDependencies": {
-    "lib0": "0.0.2",
     "rollup": "^1.1.2",
     "rollup-cli": "^1.0.9",
-    "standard": "^12.0.1",
-    "yjs": "file:../yjs"
+    "standard": "^12.0.1"
   },
   "peerDependenies": {
     "lib0": "*",
