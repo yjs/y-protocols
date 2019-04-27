@@ -2,13 +2,11 @@
   "name": "y-protocols",
   "version": "0.0.2",
   "description": "Yjs encoding protocols",
-  "main": "",
   "files": [
     "dist/*",
-    "examples/*",
-    "docs/*",
-    "README.md",
-    "LICENSE"
+    "auth.js",
+    "history.js",
+    "sync.js"
   ],
   "scripts": {
     "dist": "rollup -c",
