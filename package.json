@@ -6,10 +6,11 @@
     "dist/*",
     "auth.js",
     "history.js",
-    "sync.js"
+    "sync.js",
+    "awareness.js"
   ],
   "scripts": {
-    "dist": "rollup -c",
+    "dist": "rm -rf dist && rollup -c",
     "test": "echo 'should lint here'",
     "lint": "standard",
     "preversion": "npm run dist && npm run test",
