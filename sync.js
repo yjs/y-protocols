@@ -40,41 +40,25 @@ export const messageYjsSyncStep2 = 1
 export const messageYjsUpdate = 2
 
 /**
- * Read SyncStep1 and return it as a readable string.
- *
- * @param {decoding.Decoder} decoder
- * @return {string}
- */
-export const stringifySyncStep1 = (decoder) => {
-  let s = 'SyncStep1: '
-  const len = decoding.readUint32(decoder)
-  for (let i = 0; i < len; i++) {
-    const user = decoding.readVarUint(decoder)
-    const clock = decoding.readVarUint(decoder)
-    s += `(${user}:${clock})`
-  }
-  return s
-}
-
-/**
  * Create a sync step 1 message based on the state of the current shared document.
  *
  * @param {encoding.Encoder} encoder
- * @param {Y.StructStore} store
+ * @param {Y.Doc} doc
  */
-export const writeSyncStep1 = (encoder, store) => {
+export const writeSyncStep1 = (encoder, doc) => {
   encoding.writeVarUint(encoder, messageYjsSyncStep1)
-  Y.writeStates(encoder, store)
+  const sv = Y.encodeDocumentStateVector(doc)
+  encoding.writeVarUint8Array(encoder, sv)
 }
 
 /**
  * @param {encoding.Encoder} encoder
- * @param {Y.StructStore} store
- * @param {Map<number, number>} sm
+ * @param {Y.Doc} doc
+ * @param {Uint8Array} encodedStateVector
  */
-export const writeSyncStep2 = (encoder, store, sm) => {
+export const writeSyncStep2 = (encoder, doc, encodedStateVector) => {
   encoding.writeVarUint(encoder, messageYjsSyncStep2)
-  Y.writeModel(encoder, store, sm)
+  encoding.writeVarUint8Array(encoder, Y.encodeStateAsUpdate(doc, encodedStateVector))
 }
 
 /**
@@ -82,50 +66,57 @@ export const writeSyncStep2 = (encoder, store, sm) => {
  *
  * @param {decoding.Decoder} decoder The reply to the received message
  * @param {encoding.Encoder} encoder The received message
- * @param {Y.StructStore} store
+ * @param {Y.Doc} doc
  */
-export const readSyncStep1 = (decoder, encoder, store) =>
-  writeSyncStep2(encoder, store, Y.readStatesAsMap(decoder))
+export const readSyncStep1 = (decoder, encoder, doc) =>
+  writeSyncStep2(encoder, doc, decoding.readVarUint8Array(decoder))
 
 /**
  * Read and apply Structs and then DeleteStore to a y instance.
  *
  * @param {decoding.Decoder} decoder
- * @param {Y.Transaction} transaction
- * @param {Y.StructStore} store
+ * @param {Y.Doc} doc
+ * @param {any} transactionOrigin
  */
-export const readSyncStep2 = Y.readModel
+export const readSyncStep2 = (decoder, doc, transactionOrigin) => {
+  Y.applyUpdate(doc, decoding.readVarUint8Array(decoder), transactionOrigin)
+}
 
 /**
  * @param {encoding.Encoder} encoder
- * @param {encoding.Encoder} update
+ * @param {Uint8Array} update
  */
 export const writeUpdate = (encoder, update) => {
   encoding.writeVarUint(encoder, messageYjsUpdate)
-  encoding.writeBinaryEncoder(encoder, update)
+  encoding.writeVarUint8Array(encoder, update)
 }
 
-export const readUpdate = Y.readModel
+/**
+ * Read and apply Structs and then DeleteStore to a y instance.
+ *
+ * @param {decoding.Decoder} decoder
+ * @param {Y.Doc} doc
+ * @param {any} transactionOrigin
+ */
+export const readUpdate = readSyncStep2
 
 /**
  * @param {decoding.Decoder} decoder A message received from another client
  * @param {encoding.Encoder} encoder The reply message. Will not be sent if empty.
- * @param {Y.Y} y
- * @param {any} origin
+ * @param {Y.Doc} doc
+ * @param {any} transactionOrigin
  */
-export const readSyncMessage = (decoder, encoder, y, origin) => {
+export const readSyncMessage = (decoder, encoder, doc, transactionOrigin) => {
   const messageType = decoding.readVarUint(decoder)
   switch (messageType) {
     case messageYjsSyncStep1:
-      readSyncStep1(decoder, encoder, y.store)
+      readSyncStep1(decoder, encoder, doc)
       break
     case messageYjsSyncStep2:
-      // @ts-ignore
-      y.transact(transaction => readSyncStep2(decoder, transaction, y.store), origin)
+      readSyncStep2(decoder, doc, transactionOrigin)
       break
     case messageYjsUpdate:
-      // @ts-ignore
-      y.transact(transaction => readUpdate(decoder, transaction, y.store), origin)
+      readUpdate(decoder, doc, transactionOrigin)
       break
     default:
       throw new Error('Unknown message type')

@@ -13,7 +13,7 @@ const messageUsersStateChanged = 0
  * This is just a template for a Yjs instance with awareness.
  * We do not really extend it.
  */
-export class YWithAwareness extends Y.Y {
+export class YWithAwareness extends Y.Doc {
   constructor () {
     super()
     /**

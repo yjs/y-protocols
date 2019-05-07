@@ -12,7 +12,7 @@ import * as Y from 'yjs'
 
 /**
  * @param {encoding.Encoder} encoder
- * @param {Y.Y} y
+ * @param {Y.Doc} y
  * @param {Map<number, string>} userMap
  */
 export const writeHistorySnapshot = (encoder, y, userMap) => {
