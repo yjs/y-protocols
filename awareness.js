@@ -2,18 +2,20 @@
  * @module awareness-protocol
  */
 
-import * as Y from 'yjs'
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
 import * as error from 'lib0/error.js'
+import { Observable } from 'lib0/observable.js'
 
 const messageUsersStateChanged = 0
 
 /**
- * This is just a template for a Yjs instance with awareness.
- * We do not really extend it.
+ * This is just a type declaration for an provider that supports awareness awareness.
+ * We do not use or extend it.
+ *
+ * @extends {Observable<string>}
  */
-export class YWithAwareness extends Y.Doc {
+export class Awareness extends Observable {
   constructor () {
     super()
     /**
@@ -26,13 +28,13 @@ export class YWithAwareness extends Y.Doc {
   /**
    * @return {Object<string,Object>}
    */
-  getLocalAwarenessInfo () {
+  getLocalState () {
     throw error.methodUnimplemented()
   }
   /**
    * @return {Map<string,Object<string,Object>>}
    */
-  getAwarenessInfo () {
+  getState () {
     throw error.methodUnimplemented()
   }
   /**
@@ -41,6 +43,31 @@ export class YWithAwareness extends Y.Doc {
    */
   setAwarenessField (field, value) {
     throw error.methodUnimplemented()
+  }
+  getLocalAwarenessInfo () {
+    return this._localAwarenessState
+  }
+  getAwarenessInfo () {
+    return this.awareness
+  }
+  /**
+   * @param {string?} field
+   * @param {Object} value
+   */
+  setAwarenessField (field, value) {
+    if (field !== null) {
+      this._localAwarenessState[field] = value
+    }
+    if (this.wsconnected) {
+      const clock = (this.awarenessClock.get(this.doc.clientID) || 0) + 1
+      this.awarenessClock.set(this.doc.clientID, clock)
+      const encoder = encoding.createEncoder()
+      encoding.writeVarUint(encoder, messageAwareness)
+      awarenessProtocol.writeUsersStateChange(encoder, [{ clientID: this.doc.clientID, state: this._localAwarenessState, clock }])
+      const buf = encoding.toUint8Array(encoder)
+      // @ts-ignore we know that wsconnected = true
+      this.ws.send(buf)
+    }
   }
 }
 
@@ -69,7 +96,7 @@ export const writeUsersStateChange = (encoder, stateUpdates) => {
 
 /**
  * @param {decoding.Decoder} decoder
- * @param {YWithAwareness} y
+ * @param {Awareness} y
  */
 export const readUsersStateChange = (decoder, y) => {
   const added = []
@@ -130,7 +157,7 @@ export const forwardUsersStateChange = (decoder, encoder) => {
 
 /**
  * @param {decoding.Decoder} decoder
- * @param {YWithAwareness} y
+ * @param {Awareness} y
  */
 export const readAwarenessMessage = (decoder, y) => {
   switch (decoding.readVarUint(decoder)) {
