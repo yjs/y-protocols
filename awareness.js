@@ -4,101 +4,188 @@
 
 import * as encoding from 'lib0/encoding.js'
 import * as decoding from 'lib0/decoding.js'
-import * as error from 'lib0/error.js'
+import * as time from 'lib0/time.js'
+import * as math from 'lib0/math.js'
 import { Observable } from 'lib0/observable.js'
+import * as Y from 'yjs'
 
-const messageUsersStateChanged = 0
+const outdatedTimeout = 30000
 
 /**
- * This is just a type declaration for an provider that supports awareness awareness.
- * We do not use or extend it.
+ * @typedef {Object} MetaClientState
+ * @property {number} MetaClientState.clock
+ * @property {number} MetaClientState.lastUpdated unix timestamp
+ */
+
+/**
+ * The Awareness class implements a simple shared state protocol that can be used for non-persistent data like awareness information
+ * (cursor, username, status, ..). Each client can update its own local state and listen to state changes of
+ * remote clients. Every client may set a state of a remote peer to `null` to mark the client as offline.
+ *
+ * Each client is identified by a unique client id (something we borrow from `doc.clientID`). A client can override
+ * its own state by propagating a message with an increasing timestamp (`clock`). If such a message is received, it is
+ * applied if the known state of that client is older than the new state (`clock < newClock`). If a client thinks that
+ * a remote client is offline, it may propagate a message with
+ * `{ clock: currentClientClock, state: null, client: remoteClient }`. If such a
+ * message is received, and the known clock of that client equals the received clock, it will override the state with `null`.
+ *
+ * Before a client disconnects, it should propagate a `null` state with an updated clock.
+ *
+ * Awareness states must be updated every 30 seconds. Otherwise the Awareness instance will delete the client state.
  *
  * @extends {Observable<string>}
  */
 export class Awareness extends Observable {
-  constructor () {
+  /**
+   * @param {Y.Doc} doc
+   */
+  constructor (doc) {
     super()
+    this.doc = doc
     /**
-     * @type {Object<string,Object>}
+     * Maps from client id to client state
+     * @type {Map<number, Object<string, any>>}
      */
-    this._localAwarenessState = {}
-    this.awareness = new Map()
-    this.awarenessClock = new Map()
+    this.states = new Map()
+    /**
+     * @type {Map<number, MetaClientState>}
+     */
+    this.meta = new Map()
+    this._checkInterval = setInterval(() => {
+      const now = time.getUnixTime()
+      if (this.getLocalState() !== null && outdatedTimeout / 2 <= now - /** @type {{lastUpdated:number}} */ (this.meta.get(doc.clientID)).lastUpdated) {
+        // renew local clock
+        this.setLocalState(this.getLocalState())
+      }
+      /**
+       * @type {Array<number>}
+       */
+      const remove = []
+      this.meta.forEach((meta, clientid) => {
+        if (outdatedTimeout <= now - meta.lastUpdated) {
+          remove.push(clientid)
+        }
+      })
+      if (remove.length > 0) {
+        removeAwarenessStates(this, remove, 'timeout')
+      }
+    }, math.floor(outdatedTimeout / 10))
+    doc.on('destroy', () => {
+      this.destroy()
+    })
+  }
+  destroy () {
+    clearInterval(this._checkInterval)
   }
   /**
-   * @return {Object<string,Object>}
+   * @return {Object<string,Object>|null}
    */
   getLocalState () {
-    throw error.methodUnimplemented()
+    return this.states.get(this.doc.clientID) || null
   }
   /**
-   * @return {Map<string,Object<string,Object>>}
+   * @param {Object<string,any>|null} state
    */
-  getState () {
-    throw error.methodUnimplemented()
+  setLocalState (state) {
+    const clientID = this.doc.clientID
+    const currLocalMeta = this.meta.get(clientID)
+    const clock = currLocalMeta === undefined ? 0 : currLocalMeta.clock + 1
+    if (state === null) {
+      this.states.delete(clientID)
+    } else {
+      this.states.set(clientID, state)
+    }
+    this.meta.set(clientID, {
+      clock,
+      lastUpdated: time.getUnixTime()
+    })
+    const added = []
+    const updated = []
+    const removed = []
+    if (state === null) {
+      removed.push(clientID)
+    } else if (currLocalMeta === undefined) {
+      added.push(clientID)
+    } else {
+      updated.push(clientID)
+    }
+    this.emit('change', [{ added, updated, removed }, 'local'])
   }
   /**
    * @param {string} field
    * @param {Object} value
    */
-  setAwarenessField (field, value) {
-    throw error.methodUnimplemented()
-  }
-  getLocalAwarenessInfo () {
-    return this._localAwarenessState
-  }
-  getAwarenessInfo () {
-    return this.awareness
+  setLocalStateField (field, value) {
+    const state = this.getLocalState()
+    if (state !== null) {
+      state[field] = value
+      this.setLocalState(state)
+    }
   }
   /**
-   * @param {string?} field
-   * @param {Object} value
+   * @return {Map<number,Object<string,any>>}
    */
-  setAwarenessField (field, value) {
-    if (field !== null) {
-      this._localAwarenessState[field] = value
-    }
-    if (this.wsconnected) {
-      const clock = (this.awarenessClock.get(this.doc.clientID) || 0) + 1
-      this.awarenessClock.set(this.doc.clientID, clock)
-      const encoder = encoding.createEncoder()
-      encoding.writeVarUint(encoder, messageAwareness)
-      awarenessProtocol.writeUsersStateChange(encoder, [{ clientID: this.doc.clientID, state: this._localAwarenessState, clock }])
-      const buf = encoding.toUint8Array(encoder)
-      // @ts-ignore we know that wsconnected = true
-      this.ws.send(buf)
-    }
+  getStates () {
+    return this.states
   }
 }
 
 /**
- * @typedef {Object} UserStateUpdate
- * @property {number} UserStateUpdate.clientID
- * @property {number} UserStateUpdate.clock
- * @property {Object} UserStateUpdate.state
+ * Mark (remote) clients as inactive and remove them from the list of active peers.
+ * This change will be propagated to remote clients.
+ *
+ * @param {Awareness} awareness
+ * @param {Array<number>} clients
+ * @param {any} origin
  */
+export const removeAwarenessStates = (awareness, clients, origin) => {
+  const removed = []
+  for (let i = 0; i < clients.length; i++) {
+    const clientID = clients[i]
+    if (awareness.states.has(clientID)) {
+      awareness.states.delete(clientID)
+      if (clientID === awareness.doc.clientID) {
+        const curMeta = /** @type {MetaClientState} */ (awareness.meta.get(clientID))
+        curMeta.clock++
+        curMeta.lastUpdated = time.getUnixTime()
+        awareness.meta.set(clientID, curMeta)
+      }
+      removed.push(clientID)
+    }
+  }
+  if (removed.length > 0) {
+    awareness.emit('change', [{ added: [], updated: [], removed }, origin])
+  }
+}
 
 /**
- * @param {encoding.Encoder} encoder
- * @param {Array<UserStateUpdate>} stateUpdates
+ * @param {Awareness} awareness
+ * @param {Array<number>} clients
+ * @return {Uint8Array}
  */
-export const writeUsersStateChange = (encoder, stateUpdates) => {
-  const len = stateUpdates.length
-  encoding.writeVarUint(encoder, messageUsersStateChanged)
+export const encodeAwarenessUpdate = (awareness, clients) => {
+  const len = clients.length
+  const encoder = encoding.createEncoder()
   encoding.writeVarUint(encoder, len)
   for (let i = 0; i < len; i++) {
-    const { clientID, state, clock } = stateUpdates[i]
+    const clientID = clients[i]
+    const state = awareness.states.get(clientID) || null
+    const clock = /** @type {MetaClientState} */ (awareness.meta.get(clientID)).clock
     encoding.writeVarUint(encoder, clientID)
     encoding.writeVarUint(encoder, clock)
     encoding.writeVarString(encoder, JSON.stringify(state))
   }
+  return encoding.toUint8Array(encoder)
 }
 
 /**
- * @param {decoding.Decoder} decoder
- * @param {Awareness} y
+ * @param {Awareness} awareness
+ * @param {Uint8Array} update
+ * @param {any} origin This will be added to the emitted change event
  */
-export const readUsersStateChange = (decoder, y) => {
+export const applyAwarenessUpdate = (awareness, update, origin) => {
+  const decoder = decoding.createDecoder(update)
+  const timestamp = time.getUnixTime()
   const added = []
   const updated = []
   const removed = []
@@ -107,86 +194,30 @@ export const readUsersStateChange = (decoder, y) => {
     const clientID = decoding.readVarUint(decoder)
     const clock = decoding.readVarUint(decoder)
     const state = JSON.parse(decoding.readVarString(decoder))
-    const uClock = y.awarenessClock.get(clientID) || 0
-    y.awarenessClock.set(clientID, clock)
-    if (state === null) {
-      // only write if clock increases. cannot overwrite
-      if (y.awareness.has(clientID) && uClock < clock) {
-        y.awareness.delete(clientID)
-        removed.push(clientID)
-      }
-    } else if (uClock <= clock) { // allow to overwrite (e.g. when client was on, then offline)
-      if (y.awareness.has(clientID)) {
-        updated.push(clientID)
+    const clientMeta = awareness.meta.get(clientID)
+    const uClock = clientMeta === undefined ? 0 : clientMeta.clock
+    if (uClock < clock || (uClock === clock && state === null && awareness.states.has(clientID))) {
+      if (state === null) {
+        awareness.states.delete(clientID)
       } else {
-        added.push(clientID)
+        awareness.states.set(clientID, state)
       }
-      y.awareness.set(clientID, state)
-      y.awarenessClock.set(clientID, clock)
+      awareness.meta.set(clientID, {
+        clock,
+        lastUpdated: timestamp
+      })
+      if (clientMeta === undefined && state !== null) {
+        added.push(clientID)
+      } else if (clientMeta !== undefined && state === null) {
+        removed.push(clientID)
+      } else if (state !== null) {
+        updated.push(clientID)
+      }
     }
   }
   if (added.length > 0 || updated.length > 0 || removed.length > 0) {
-    // @ts-ignore We know emit is defined
-    y.emit('awareness', [{
+    awareness.emit('change', [{
       added, updated, removed
-    }])
+    }, origin])
   }
-}
-
-/**
- * @param {decoding.Decoder} decoder
- * @param {encoding.Encoder} encoder
- * @return {Array<UserStateUpdate>}
- */
-export const forwardUsersStateChange = (decoder, encoder) => {
-  const len = decoding.readVarUint(decoder)
-  const updates = []
-  encoding.writeVarUint(encoder, messageUsersStateChanged)
-  encoding.writeVarUint(encoder, len)
-  for (let i = 0; i < len; i++) {
-    const clientID = decoding.readVarUint(decoder)
-    const clock = decoding.readVarUint(decoder)
-    const state = decoding.readVarString(decoder)
-    encoding.writeVarUint(encoder, clientID)
-    encoding.writeVarUint(encoder, clock)
-    encoding.writeVarString(encoder, state)
-    updates.push({ clientID, state: JSON.parse(state), clock })
-  }
-  return updates
-}
-
-/**
- * @param {decoding.Decoder} decoder
- * @param {Awareness} y
- */
-export const readAwarenessMessage = (decoder, y) => {
-  switch (decoding.readVarUint(decoder)) {
-    case messageUsersStateChanged:
-      readUsersStateChange(decoder, y)
-      break
-  }
-}
-
-/**
- * @typedef {Object} UserState
- * @property {number} UserState.clientID
- * @property {any} UserState.state
- * @property {number} UserState.clock
- */
-
-/**
- * @param {decoding.Decoder} decoder
- * @param {encoding.Encoder} encoder
- * @return {Array<UserState>} Array of state updates
- */
-export const forwardAwarenessMessage = (decoder, encoder) => {
-  /**
-   * @type {Array<UserState>}
-   */
-  let s = []
-  switch (decoding.readVarUint(decoder)) {
-    case messageUsersStateChanged:
-      s = forwardUsersStateChange(decoder, encoder)
-  }
-  return s
 }

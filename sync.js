@@ -47,7 +47,7 @@ export const messageYjsUpdate = 2
  */
 export const writeSyncStep1 = (encoder, doc) => {
   encoding.writeVarUint(encoder, messageYjsSyncStep1)
-  const sv = Y.encodeDocumentStateVector(doc)
+  const sv = Y.encodeStateVector(doc)
   encoding.writeVarUint8Array(encoder, sv)
 }
 
