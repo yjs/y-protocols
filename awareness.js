@@ -7,7 +7,7 @@ import * as decoding from 'lib0/decoding.js'
 import * as time from 'lib0/time.js'
 import * as math from 'lib0/math.js'
 import { Observable } from 'lib0/observable.js'
-import * as Y from 'yjs'
+import * as Y from 'yjs' // eslint-disable-line
 
 const outdatedTimeout = 30000
 

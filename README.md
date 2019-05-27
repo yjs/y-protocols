@@ -5,7 +5,7 @@ This API is unstable and subject to change.
 
 ## API
 
-### Awareness Protocoll
+### Awareness Protocol
 
 ```js
 import * as awarenessProtocol from 'y-protocols/awareness.js'
