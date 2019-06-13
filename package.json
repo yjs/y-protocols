@@ -25,6 +25,12 @@
   ],
   "author": "Kevin Jahns <kevin.jahns@protonmail.com>",
   "license": "MIT",
+  "standard": {
+    "ignore": [
+      "/dist",
+      "/node_modules"
+    ]
+  },
   "bugs": {
     "url": "https://github.com/y-js/y-protocols/issues"
   },
