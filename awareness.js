@@ -53,7 +53,7 @@ export class Awareness extends Observable {
     this.meta = new Map()
     this._checkInterval = setInterval(() => {
       const now = time.getUnixTime()
-      if (this.getLocalState() !== null && outdatedTimeout / 2 <= now - /** @type {{lastUpdated:number}} */ (this.meta.get(doc.clientID)).lastUpdated) {
+      if (this.getLocalState() !== null && (outdatedTimeout / 2 <= now - /** @type {{lastUpdated:number}} */ (this.meta.get(doc.clientID)).lastUpdated)) {
         // renew local clock
         this.setLocalState(this.getLocalState())
       }
@@ -62,7 +62,7 @@ export class Awareness extends Observable {
        */
       const remove = []
       this.meta.forEach((meta, clientid) => {
-        if (outdatedTimeout <= now - meta.lastUpdated) {
+        if (outdatedTimeout <= now - meta.lastUpdated && this.states.has(clientid)) {
           remove.push(clientid)
         }
       })
@@ -73,6 +73,7 @@ export class Awareness extends Observable {
     doc.on('destroy', () => {
       this.destroy()
     })
+    this.setLocalState({})
   }
   destroy () {
     clearInterval(this._checkInterval)
@@ -146,9 +147,10 @@ export const removeAwarenessStates = (awareness, clients, origin) => {
       awareness.states.delete(clientID)
       if (clientID === awareness.doc.clientID) {
         const curMeta = /** @type {MetaClientState} */ (awareness.meta.get(clientID))
-        curMeta.clock++
-        curMeta.lastUpdated = time.getUnixTime()
-        awareness.meta.set(clientID, curMeta)
+        awareness.meta.set(clientID, {
+          clock: curMeta.clock + 1,
+          lastUpdated: time.getUnixTime()
+        })
       }
       removed.push(clientID)
     }
@@ -163,13 +165,13 @@ export const removeAwarenessStates = (awareness, clients, origin) => {
  * @param {Array<number>} clients
  * @return {Uint8Array}
  */
-export const encodeAwarenessUpdate = (awareness, clients) => {
+export const encodeAwarenessUpdate = (awareness, clients, states = awareness.states) => {
   const len = clients.length
   const encoder = encoding.createEncoder()
   encoding.writeVarUint(encoder, len)
   for (let i = 0; i < len; i++) {
     const clientID = clients[i]
-    const state = awareness.states.get(clientID) || null
+    const state = states.get(clientID) || null
     const clock = /** @type {MetaClientState} */ (awareness.meta.get(clientID)).clock
     encoding.writeVarUint(encoder, clientID)
     encoding.writeVarUint(encoder, clock)
@@ -192,13 +194,20 @@ export const applyAwarenessUpdate = (awareness, update, origin) => {
   const len = decoding.readVarUint(decoder)
   for (let i = 0; i < len; i++) {
     const clientID = decoding.readVarUint(decoder)
-    const clock = decoding.readVarUint(decoder)
+    let clock = decoding.readVarUint(decoder)
     const state = JSON.parse(decoding.readVarString(decoder))
     const clientMeta = awareness.meta.get(clientID)
-    const uClock = clientMeta === undefined ? 0 : clientMeta.clock
-    if (uClock < clock || (uClock === clock && state === null && awareness.states.has(clientID))) {
+    const currClock = clientMeta === undefined ? 0 : clientMeta.clock
+    if (currClock < clock || (currClock === clock && state === null && awareness.states.has(clientID))) {
       if (state === null) {
-        awareness.states.delete(clientID)
+        // never let a remote client remove this local state
+        if (clientID === awareness.doc.clientID && awareness.getLocalState() != null) {
+          // remote client removed the local state. Do not remote state. Broadcast a message indicating
+          // that this client still exists by increasing the clock
+          clock++
+        } else {
+          awareness.states.delete(clientID)
+        }
       } else {
         awareness.states.set(clientID, state)
       }
