@@ -9,7 +9,7 @@ import * as math from 'lib0/math.js'
 import { Observable } from 'lib0/observable.js'
 import * as Y from 'yjs' // eslint-disable-line
 
-const outdatedTimeout = 30000
+export const outdatedTimeout = 30000
 
 /**
  * @typedef {Object} MetaClientState
