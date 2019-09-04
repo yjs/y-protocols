@@ -6,7 +6,7 @@ import * as Y from 'yjs'
 /**
  * @typedef {Object} HistorySnapshot
  * @property {Y.DeleteStore} HistorySnapshot.ds
- * @property {Map<number,number>} HistorySnapshot.sm
+ * @property {Map<number,number>} HistorySnapshot.sv
  * @property {Map<number,string>} HistorySnapshot.userMap
  */
 

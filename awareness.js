@@ -62,7 +62,7 @@ export class Awareness extends Observable {
        */
       const remove = []
       this.meta.forEach((meta, clientid) => {
-        if (outdatedTimeout <= now - meta.lastUpdated && this.states.has(clientid)) {
+        if (clientid !== doc.clientID && outdatedTimeout <= now - meta.lastUpdated && this.states.has(clientid)) {
           remove.push(clientid)
         }
       })

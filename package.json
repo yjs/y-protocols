@@ -18,7 +18,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/y-js/y-protocols.git"
+    "url": "git+https://github.com/yjs/y-protocols.git"
   },
   "keywords": [
     "Yjs"
@@ -32,11 +32,11 @@
     ]
   },
   "bugs": {
-    "url": "https://github.com/y-js/y-protocols/issues"
+    "url": "https://github.com/yjs/y-protocols/issues"
   },
-  "homepage": "https://github.com/y-js/y-protocols#readme",
+  "homepage": "https://github.com/yjs/y-protocols#readme",
   "dependencies": {
-    "lib0": "0.0.5"
+    "lib0": "^0.1.0"
   },
   "devDependencies": {
     "yjs": "13.0.0-94",
@@ -45,6 +45,6 @@
     "standard": "^12.0.1"
   },
   "peerDependenies": {
-    "yjs": "*"
+    "yjs": ">13.0.0-97"
   }
 }
