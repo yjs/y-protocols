@@ -54,7 +54,7 @@ export const writeSyncStep1 = (encoder, doc) => {
 /**
  * @param {encoding.Encoder} encoder
  * @param {Y.Doc} doc
- * @param {Uint8Array|undefined} encodedStateVector
+ * @param {Uint8Array} [encodedStateVector]
  */
 export const writeSyncStep2 = (encoder, doc, encodedStateVector) => {
   encoding.writeVarUint(encoder, messageYjsSyncStep2)
