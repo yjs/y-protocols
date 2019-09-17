@@ -36,7 +36,7 @@
   },
   "homepage": "https://github.com/yjs/y-protocols#readme",
   "dependencies": {
-    "lib0": "^0.1.0"
+    "lib0": "^0.1.1"
   },
   "devDependencies": {
     "yjs": "13.0.0-94",
@@ -45,6 +45,6 @@
     "standard": "^12.0.1"
   },
   "peerDependenies": {
-    "yjs": ">13.0.0-97"
+    "yjs": ">13.0.0-98"
   }
 }
