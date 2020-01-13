@@ -2,19 +2,18 @@
   "name": "y-protocols",
   "version": "0.1.0",
   "description": "Yjs encoding protocols",
+  "type": "module",
   "files": [
     "dist/*",
     "auth.js",
-    "history.js",
     "sync.js",
     "awareness.js"
   ],
   "scripts": {
     "dist": "rm -rf dist && rollup -c",
-    "test": "echo 'should lint here'",
-    "lint": "standard",
-    "preversion": "npm run dist && npm run test",
-    "version": "npm run dist"
+    "test": "npm run lint",
+    "lint": "standard && tsc",
+    "preversion": "npm run dist && npm run test"
   },
   "repository": {
     "type": "git",
@@ -36,15 +35,16 @@
   },
   "homepage": "https://github.com/yjs/y-protocols#readme",
   "dependencies": {
-    "lib0": "^0.1.1"
+    "lib0": "^0.2.3"
   },
   "devDependencies": {
-    "yjs": "13.0.0-94",
     "rollup": "^1.1.2",
     "rollup-cli": "^1.0.9",
-    "standard": "^12.0.1"
+    "standard": "^12.0.1",
+    "typescript": "^3.7.4",
+    "yjs": "13.0.0-105"
   },
   "peerDependenies": {
-    "yjs": ">13.0.0-98"
+    "yjs": ">=13.0.0-103"
   }
 }
