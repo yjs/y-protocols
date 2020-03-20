@@ -10,10 +10,13 @@
     "awareness.js"
   ],
   "scripts": {
+    "clean": "rm -rf dist *.d.ts */*.d.ts *.d.ts.map */*.d.ts.map",
     "dist": "rm -rf dist && rollup -c",
     "test": "npm run lint",
     "lint": "standard && tsc",
-    "preversion": "npm run dist && npm run test"
+    "types": "tsc --outDir .",
+    "preversion": "npm run dist && npm run test && npm run types",
+    "postversion": "npm run clean"
   },
   "repository": {
     "type": "git",
@@ -35,14 +38,14 @@
   },
   "homepage": "https://github.com/yjs/y-protocols#readme",
   "dependencies": {
-    "lib0": "^0.2.15"
+    "lib0": "^0.2.20"
   },
   "devDependencies": {
     "rollup": "^1.1.2",
     "rollup-cli": "^1.0.9",
     "standard": "^12.0.1",
-    "typescript": "^3.7.4",
-    "yjs": "^13.0.0"
+    "typescript": "^3.8.3",
+    "yjs": "^13.0.4"
   },
   "peerDependenies": {
     "yjs": "^13.0.0"
