@@ -16,7 +16,7 @@
     "lint": "standard && tsc",
     "types": "tsc --outDir .",
     "preversion": "npm run dist && npm run test && npm run types",
-    "postversion": "npm run clean"
+    "postpublish": "npm run clean"
   },
   "repository": {
     "type": "git",
