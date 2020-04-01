@@ -5,9 +5,9 @@
   "type": "module",
   "files": [
     "dist/*",
-    "auth.js",
-    "sync.js",
-    "awareness.js"
+    "auth.*",
+    "sync.*",
+    "awareness.*"
   ],
   "scripts": {
     "clean": "rm -rf dist *.d.ts */*.d.ts *.d.ts.map */*.d.ts.map",
