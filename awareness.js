@@ -7,6 +7,7 @@ import * as decoding from 'lib0/decoding.js'
 import * as time from 'lib0/time.js'
 import * as math from 'lib0/math.js'
 import { Observable } from 'lib0/observable.js'
+import * as f from 'lib0/function.js'
 import * as Y from 'yjs' // eslint-disable-line
 
 export const outdatedTimeout = 30000
@@ -91,6 +92,7 @@ export class Awareness extends Observable {
     const clientID = this.doc.clientID
     const currLocalMeta = this.meta.get(clientID)
     const clock = currLocalMeta === undefined ? 0 : currLocalMeta.clock + 1
+    const prevState = this.states.get(clientID)
     if (state === null) {
       this.states.delete(clientID)
     } else {
@@ -102,15 +104,24 @@ export class Awareness extends Observable {
     })
     const added = []
     const updated = []
+    const filteredUpdated = []
     const removed = []
     if (state === null) {
       removed.push(clientID)
-    } else if (currLocalMeta === undefined) {
-      added.push(clientID)
+    } else if (prevState == null) {
+      if (state != null) {
+        added.push(clientID)
+      }
     } else {
       updated.push(clientID)
+      if (!f.equalityDeep(prevState, state)) {
+        filteredUpdated.push(clientID)
+      }
     }
-    this.emit('change', [{ added, updated, removed }, 'local'])
+    if (added.length > 0 || filteredUpdated.length > 0 || removed.length > 0) {
+      this.emit('change', [{ added, updated: filteredUpdated, removed }, 'local'])
+    }
+    this.emit('update', [{ added, updated, removed }, 'local'])
   }
   /**
    * @param {string} field
@@ -157,6 +168,7 @@ export const removeAwarenessStates = (awareness, clients, origin) => {
   }
   if (removed.length > 0) {
     awareness.emit('change', [{ added: [], updated: [], removed }, origin])
+    awareness.emit('update', [{ added: [], updated: [], removed }, origin])
   }
 }
 
@@ -190,6 +202,7 @@ export const applyAwarenessUpdate = (awareness, update, origin) => {
   const timestamp = time.getUnixTime()
   const added = []
   const updated = []
+  const filteredUpdated = []
   const removed = []
   const len = decoding.readVarUint(decoder)
   for (let i = 0; i < len; i++) {
@@ -197,6 +210,7 @@ export const applyAwarenessUpdate = (awareness, update, origin) => {
     let clock = decoding.readVarUint(decoder)
     const state = JSON.parse(decoding.readVarString(decoder))
     const clientMeta = awareness.meta.get(clientID)
+    const prevState = awareness.states.get(clientID)
     const currClock = clientMeta === undefined ? 0 : clientMeta.clock
     if (currClock < clock || (currClock === clock && state === null && awareness.states.has(clientID))) {
       if (state === null) {
@@ -220,12 +234,20 @@ export const applyAwarenessUpdate = (awareness, update, origin) => {
       } else if (clientMeta !== undefined && state === null) {
         removed.push(clientID)
       } else if (state !== null) {
+        if (!f.equalityDeep(state, prevState)) {
+          filteredUpdated.push(clientID)
+        }
         updated.push(clientID)
       }
     }
   }
-  if (added.length > 0 || updated.length > 0 || removed.length > 0) {
+  if (added.length > 0 || filteredUpdated.length > 0 || removed.length > 0) {
     awareness.emit('change', [{
+      added, updated: filteredUpdated, removed
+    }, origin])
+  }
+  if (added.length > 0 || updated.length > 0 || removed.length > 0) {
+    awareness.emit('update', [{
       added, updated, removed
     }, origin])
   }

@@ -45,7 +45,7 @@ offline.
   </dd>
   <b><code>setLocalStateField(string, any)</code></b>
   <dd>
-Only update a single field on the local awareness object. Does not do 
+Only update a single field on the local awareness object. Does not do
 anything if the local state is not set.
   </dd>
   <b><code>getStates():Map&lt;number,Object&lt;string,any&gt;&gt;</code></b>
@@ -58,7 +58,15 @@ on('change', ({ added: Array&lt;number&gt;, updated: Array&lt;number&gt;
 removed: Array&lt;number&gt; }, [transactionOrigin:any]) => ..)
   </code></b>
   <dd>
-Listen to remote and local changes on the awareness instance.
+Listen to remote and local state changes on the awareness instance.
+  </dd>
+  <b><code>
+on('update', ({ added: Array&lt;number&gt;, updated: Array&lt;number&gt;
+removed: Array&lt;number&gt; }, [transactionOrigin:any]) => ..)
+  </code></b>
+  <dd>
+Listen to remote and local awareness changes on the awareness instance.
+This event is called even when the awarenes state does not change.
   </dd>
 </dl>
 

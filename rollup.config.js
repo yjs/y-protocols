@@ -1,18 +1,33 @@
-import fs from 'fs'
-import path from 'path'
+import resolve from '@rollup/plugin-node-resolve'
+import commonjs from '@rollup/plugin-commonjs'
 
-const files = fs.readdirSync('./').filter(file => /(?<!\.(test|config))\.js$/.test(file))
+const files = ['awareness.js', 'auth.js', 'sync.js', 'test.js']
 
-export default files.map(file => ({
-  input: file,
+export default [{
+  input: './test.js',
   output: {
-    file: path.join('./dist', file.slice(0, -3) + '.cjs'),
+    file: './dist/test.js',
+    format: 'iife',
+    sourcemap: true
+  },
+  plugins: [
+    resolve({ mainFields: ['module', 'browser', 'main'] }),
+    commonjs()
+  ]
+}, {
+  input: files,
+  output: {
+    dir: './dist',
     format: 'cjs',
+    sourcemap: true,
+    entryFileNames: '[name].cjs',
+    chunkFileNames: '[name]-[hash].cjs',
     paths: /** @param {any} path */ path => {
       if (/^lib0\//.test(path)) {
         return `lib0/dist/${path.slice(5, -3) + '.cjs'}`
       }
       return path
     }
-  }
-}))
+  },
+  external: /** @param  {any} id */ id => /^lib0\/|yjs/.test(id)
+}]
