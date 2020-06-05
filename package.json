@@ -1,6 +1,6 @@
 {
   "name": "y-protocols",
-  "version": "0.2.3",
+  "version": "1.0.0",
   "description": "Yjs encoding protocols",
   "type": "module",
   "funding": {
