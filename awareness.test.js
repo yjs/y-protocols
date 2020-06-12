@@ -17,19 +17,37 @@ export const testAwareness = tc => {
     const enc = awareness.encodeAwarenessUpdate(aw1, added.concat(updated).concat(removed))
     awareness.applyAwarenessUpdate(aw2, enc, 'custom')
   })
+  let lastChangeLocal = /** @type {any} */ (null)
+  aw1.on('change', /** @param {any} change */ change => {
+    lastChangeLocal = change
+  })
   let lastChange = /** @type {any} */ (null)
   aw2.on('change', /** @param {any} change */ change => {
     lastChange = change
   })
-  aw1.setLocalState({ x: 4 })
-  t.compare(aw2.getStates().get(0), { x: 4 })
+  aw1.setLocalState({ x: 3 })
+  t.compare(aw2.getStates().get(0), { x: 3 })
   t.assert(/** @type {any} */ (aw2.meta.get(0)).clock === 1)
   t.compare(lastChange.added, [0])
+  // When creating an Awareness instance, the the local client is already marked as available, so it is not updated.
+  t.compare(lastChangeLocal, { added: [], updated: [0], removed: [] })
+
+  // update state
   lastChange = null
+  lastChangeLocal = null
+  aw1.setLocalState({ x: 4 })
+  t.compare(aw2.getStates().get(0), { x: 4 })
+  t.compare(lastChangeLocal, { added: [], updated: [0], removed: [] })
+  t.compare(lastChangeLocal, lastChange)
+
+  lastChange = null
+  lastChangeLocal = null
   aw1.setLocalState({ x: 4 })
   t.assert(lastChange === null)
-  t.assert(/** @type {any} */ (aw2.meta.get(0)).clock === 2)
+  t.assert(/** @type {any} */ (aw2.meta.get(0)).clock === 3)
+  t.compare(lastChangeLocal, lastChange)
   aw1.setLocalState(null)
   t.assert(lastChange.removed.length === 1)
   t.compare(aw1.getStates().get(0), undefined)
+  t.compare(lastChangeLocal, lastChange)
 }
