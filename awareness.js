@@ -80,7 +80,7 @@ export class Awareness extends Observable {
     clearInterval(this._checkInterval)
   }
   /**
-   * @return {Object<string,Object>|null}
+   * @return {Object<string,any>|null}
    */
   getLocalState () {
     return this.states.get(this.doc.clientID) || null
@@ -125,7 +125,7 @@ export class Awareness extends Observable {
   }
   /**
    * @param {string} field
-   * @param {Object} value
+   * @param {any} value
    */
   setLocalStateField (field, value) {
     const state = this.getLocalState()
@@ -188,6 +188,33 @@ export const encodeAwarenessUpdate = (awareness, clients, states = awareness.sta
     encoding.writeVarUint(encoder, clientID)
     encoding.writeVarUint(encoder, clock)
     encoding.writeVarString(encoder, JSON.stringify(state))
+  }
+  return encoding.toUint8Array(encoder)
+}
+
+/**
+ * Modify the content of an awareness update before re-encoding it to an awareness update.
+ *
+ * This might be useful when you have a central server that wants to ensure that clients
+ * cant hijack somebody elses identity.
+ *
+ * @param {Uint8Array} update
+ * @param {function(any):any} modify
+ * @return {Uint8Array}
+ */
+export const modifyAwarenessUpdate = (update, modify) => {
+  const decoder = decoding.createDecoder(update)
+  const encoder = encoding.createEncoder()
+  const len = decoding.readVarUint(decoder)
+  encoding.writeVarUint(encoder, len)
+  for (let i = 0; i < len; i++) {
+    const clientID = decoding.readVarUint(decoder)
+    const clock = decoding.readVarUint(decoder)
+    const state = JSON.parse(decoding.readVarString(decoder))
+    const modifiedState = modify(state)
+    encoding.writeVarUint(encoder, clientID)
+    encoding.writeVarUint(encoder, clock)
+    encoding.writeVarString(encoder, JSON.stringify(modifiedState))
   }
   return encoding.toUint8Array(encoder)
 }
