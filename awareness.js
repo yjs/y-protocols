@@ -77,6 +77,7 @@ export class Awareness extends Observable {
     this.setLocalState({})
   }
   destroy () {
+    super.destroy()
     clearInterval(this._checkInterval)
   }
   /**
