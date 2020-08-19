@@ -13,8 +13,8 @@ import * as Y from 'yjs'
 /**
  * Core Yjs defines three message types:
  * • YjsSyncStep1: Includes the State Set of the sending client. When received, the client should reply with YjsSyncStep2.
- * • YjsSyncStep2: Includes all missing structs and the complete delete set. When received, the the client is assured that
- *   it received all information from the remote client.
+ * • YjsSyncStep2: Includes all missing structs and the complete delete set. When received, the client is assured that it
+ *   received all information from the remote client.
  *
  * In a peer-to-peer network, you may want to introduce a SyncDone message type. Both parties should initiate the connection
  * with SyncStep1. When a client received SyncStep2, it should reply with SyncDone. When the local client received both
