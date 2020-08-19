@@ -11,7 +11,7 @@ import * as Y from 'yjs'
  */
 
 /**
- * Core Yjs defines three message types:
+ * Core Yjs defines two message types:
  * • YjsSyncStep1: Includes the State Set of the sending client. When received, the client should reply with YjsSyncStep2.
  * • YjsSyncStep2: Includes all missing structs and the complete delete set. When received, the client is assured that it
  *   received all information from the remote client.
