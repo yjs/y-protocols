@@ -129,11 +129,9 @@ export class Awareness extends Observable {
    * @param {any} value
    */
   setLocalStateField (field, value) {
-    const state = this.getLocalState()
-    if (state !== null) {
-      state[field] = value
-      this.setLocalState(state)
-    }
+    const state = this.getLocalState() || {}
+    state[field] = value
+    this.setLocalState(state)
   }
   /**
    * @return {Map<number,Object<string,any>>}
