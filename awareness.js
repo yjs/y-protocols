@@ -44,6 +44,10 @@ export class Awareness extends Observable {
     super()
     this.doc = doc
     /**
+     * @type {number}
+     */
+    this.clientID = doc.clientID
+    /**
      * Maps from client id to client state
      * @type {Map<number, Object<string, any>>}
      */
@@ -54,7 +58,7 @@ export class Awareness extends Observable {
     this.meta = new Map()
     this._checkInterval = setInterval(() => {
       const now = time.getUnixTime()
-      if (this.getLocalState() !== null && (outdatedTimeout / 2 <= now - /** @type {{lastUpdated:number}} */ (this.meta.get(doc.clientID)).lastUpdated)) {
+      if (this.getLocalState() !== null && (outdatedTimeout / 2 <= now - /** @type {{lastUpdated:number}} */ (this.meta.get(this.clientID)).lastUpdated)) {
         // renew local clock
         this.setLocalState(this.getLocalState())
       }
@@ -63,7 +67,7 @@ export class Awareness extends Observable {
        */
       const remove = []
       this.meta.forEach((meta, clientid) => {
-        if (clientid !== doc.clientID && outdatedTimeout <= now - meta.lastUpdated && this.states.has(clientid)) {
+        if (clientid !== this.clientID && outdatedTimeout <= now - meta.lastUpdated && this.states.has(clientid)) {
           remove.push(clientid)
         }
       })
@@ -76,21 +80,26 @@ export class Awareness extends Observable {
     })
     this.setLocalState({})
   }
+
   destroy () {
+    this.emit('destroy', [this])
+    this.setLocalState(null)
     super.destroy()
     clearInterval(this._checkInterval)
   }
+
   /**
    * @return {Object<string,any>|null}
    */
   getLocalState () {
-    return this.states.get(this.doc.clientID) || null
+    return this.states.get(this.clientID) || null
   }
+
   /**
    * @param {Object<string,any>|null} state
    */
   setLocalState (state) {
-    const clientID = this.doc.clientID
+    const clientID = this.clientID
     const currLocalMeta = this.meta.get(clientID)
     const clock = currLocalMeta === undefined ? 0 : currLocalMeta.clock + 1
     const prevState = this.states.get(clientID)
@@ -124,6 +133,7 @@ export class Awareness extends Observable {
     }
     this.emit('update', [{ added, updated, removed }, 'local'])
   }
+
   /**
    * @param {string} field
    * @param {any} value
@@ -135,6 +145,7 @@ export class Awareness extends Observable {
       this.setLocalState(state)
     }
   }
+
   /**
    * @return {Map<number,Object<string,any>>}
    */
@@ -157,7 +168,7 @@ export const removeAwarenessStates = (awareness, clients, origin) => {
     const clientID = clients[i]
     if (awareness.states.has(clientID)) {
       awareness.states.delete(clientID)
-      if (clientID === awareness.doc.clientID) {
+      if (clientID === awareness.clientID) {
         const curMeta = /** @type {MetaClientState} */ (awareness.meta.get(clientID))
         awareness.meta.set(clientID, {
           clock: curMeta.clock + 1,
@@ -243,7 +254,7 @@ export const applyAwarenessUpdate = (awareness, update, origin) => {
     if (currClock < clock || (currClock === clock && state === null && awareness.states.has(clientID))) {
       if (state === null) {
         // never let a remote client remove this local state
-        if (clientID === awareness.doc.clientID && awareness.getLocalState() != null) {
+        if (clientID === awareness.clientID && awareness.getLocalState() != null) {
           // remote client removed the local state. Do not remote state. Broadcast a message indicating
           // that this client still exists by increasing the clock
           clock++
