@@ -43,14 +43,16 @@
   },
   "homepage": "https://github.com/yjs/y-protocols#readme",
   "dependencies": {
-    "lib0": "^0.2.28"
+    "lib0": "^0.2.35"
   },
   "devDependencies": {
-    "concurrently": "^5.2.0",
-    "rollup": "^1.29.0",
+    "concurrently": "^5.3.0",
+    "rollup": "^2.30.0",
+    "@rollup/plugin-commonjs": "^17.0.0",
+    "@rollup/plugin-node-resolve": "^11.0.1",
     "standard": "^12.0.1",
-    "typescript": "^3.8.3",
-    "yjs": "^13.0.4"
+    "typescript": "^3.9.7",
+    "yjs": "^13.4.9"
   },
   "peerDependenies": {
     "yjs": "^13.0.0"
