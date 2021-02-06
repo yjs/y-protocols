@@ -56,7 +56,7 @@ export class Awareness extends Observable {
      * @type {Map<number, MetaClientState>}
      */
     this.meta = new Map()
-    this._checkInterval = setInterval(() => {
+    this._checkInterval = /** @type {any} */ (setInterval(() => {
       const now = time.getUnixTime()
       if (this.getLocalState() !== null && (outdatedTimeout / 2 <= now - /** @type {{lastUpdated:number}} */ (this.meta.get(this.clientID)).lastUpdated)) {
         // renew local clock
@@ -74,7 +74,7 @@ export class Awareness extends Observable {
       if (remove.length > 0) {
         removeAwarenessStates(this, remove, 'timeout')
       }
-    }, math.floor(outdatedTimeout / 10))
+    }, math.floor(outdatedTimeout / 10)))
     doc.on('destroy', () => {
       this.destroy()
     })
