@@ -79,7 +79,12 @@ export const readSyncStep1 = (decoder, encoder, doc) =>
  * @param {any} transactionOrigin
  */
 export const readSyncStep2 = (decoder, doc, transactionOrigin) => {
-  Y.applyUpdate(doc, decoding.readVarUint8Array(decoder), transactionOrigin)
+  try {
+    Y.applyUpdate(doc, decoding.readVarUint8Array(decoder), transactionOrigin)
+  } catch (error) {
+    // This catches errors that are thrown by event handlers
+    console.error('Caught error while handling a Yjs update', error)
+  }
 }
 
 /**
