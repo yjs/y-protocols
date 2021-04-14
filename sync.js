@@ -77,13 +77,13 @@ export const readSyncStep1 = (decoder, encoder, doc) =>
  * @param {decoding.Decoder} decoder
  * @param {Y.Doc} doc
  * @param {any} transactionOrigin
- * @param {(update: Uint8Array) => void} [onApplyUpdate=(update) => {}]
+ * @param {(update: Uint8Array) => void} [onApplyUpdate = (update) => {}]
  */
-export const readSyncStep2 = (decoder, doc, transactionOrigin, onApplyUpdate=((update) => {})) => {
+export const readSyncStep2 = (decoder, doc, transactionOrigin, onApplyUpdate = ((update) => {})) => {
   try {
-    const update = decoding.readVarUint8Array(decoder);
+    const update = decoding.readVarUint8Array(decoder)
     Y.applyUpdate(doc, update, transactionOrigin)
-    onApplyUpdate(update);
+    onApplyUpdate(update)
   } catch (error) {
     // This catches errors that are thrown by event handlers
     console.error('Caught error while handling a Yjs update', error)
@@ -105,7 +105,7 @@ export const writeUpdate = (encoder, update) => {
  * @param {decoding.Decoder} decoder
  * @param {Y.Doc} doc
  * @param {any} transactionOrigin
- * @param {(update: Uint8Array) => void} [onApplyUpdate=(update) => {}]
+ * @param {(update: Uint8Array) => void} [onApplyUpdate = (update) => {}]
  */
 export const readUpdate = readSyncStep2
 
@@ -114,9 +114,9 @@ export const readUpdate = readSyncStep2
  * @param {encoding.Encoder} encoder The reply message. Will not be sent if empty.
  * @param {Y.Doc} doc
  * @param {any} transactionOrigin
- * @param {(update: Uint8Array) => void} [onApplyUpdate=(update) => {}]
+ * @param {(update: Uint8Array) => void} [onApplyUpdate = (update) => {}]
  */
-export const readSyncMessage = (decoder, encoder, doc, transactionOrigin, onApplyUpdate=((update) => {})) => {
+export const readSyncMessage = (decoder, encoder, doc, transactionOrigin, onApplyUpdate = ((update) => {})) => {
   const messageType = decoding.readVarUint(decoder)
   switch (messageType) {
     case messageYjsSyncStep1:
