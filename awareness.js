@@ -141,8 +141,10 @@ export class Awareness extends Observable {
   setLocalStateField (field, value) {
     const state = this.getLocalState()
     if (state !== null) {
-      state[field] = value
-      this.setLocalState(state)
+      this.setLocalState({
+        ...state,
+        [field]: value
+      })
     }
   }
 
