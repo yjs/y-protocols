@@ -1,7 +1,7 @@
 
 import * as Y from 'yjs'
-import * as t from 'lib0/testing.js'
-import * as awareness from './awareness.js'
+import * as t from 'lib0/testing'
+import * as awareness from './awareness'
 
 /**
  * @param {t.TestCase} tc
