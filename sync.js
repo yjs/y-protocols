@@ -24,7 +24,7 @@ import * as Y from 'yjs'
  * When the server receives SyncStep1, it should reply with SyncStep2 immediately followed by SyncStep1. The client replies
  * with SyncStep2 when it receives SyncStep1. Optionally the server may send a SyncDone after it received SyncStep2, so the
  * client knows that the sync is finished.  There are two reasons for this more elaborated sync model: 1. This protocol can
- * easily be implemented on top of http and websockets. 2. The server shoul only reply to requests, and not initiate them.
+ * easily be implemented on top of http and websockets. 2. The server should only reply to requests, and not initiate them.
  * Therefore it is necesarry that the client initiates the sync.
  *
  * Construction of a message:
