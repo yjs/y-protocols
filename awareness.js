@@ -10,8 +10,6 @@ import { Observable } from 'lib0/observable'
 import * as f from 'lib0/function'
 import * as Y from 'yjs' // eslint-disable-line
 
-export const outdatedTimeout = 30000
-
 /**
  * @typedef {Object} MetaClientState
  * @property {number} MetaClientState.clock
@@ -19,7 +17,8 @@ export const outdatedTimeout = 30000
  */
 
 /**
- * The Awareness class implements a simple shared state protocol that can be used for non-persistent data like awareness information
+ * The Awareness class implements a simple shared state protocol that can be used for non-persistent data like
+ * awareness information
  * (cursor, username, status, ..). Each client can update its own local state and listen to state changes of
  * remote clients. Every client may set a state of a remote peer to `null` to mark the client as offline.
  *
@@ -28,7 +27,8 @@ export const outdatedTimeout = 30000
  * applied if the known state of that client is older than the new state (`clock < newClock`). If a client thinks that
  * a remote client is offline, it may propagate a message with
  * `{ clock: currentClientClock, state: null, client: remoteClient }`. If such a
- * message is received, and the known clock of that client equals the received clock, it will override the state with `null`.
+ * message is received, and the known clock of that client equals the received clock, it will override the state with
+ * `null`.
  *
  * Before a client disconnects, it should propagate a `null` state with an updated clock.
  *
@@ -39,10 +39,12 @@ export const outdatedTimeout = 30000
 export class Awareness extends Observable {
   /**
    * @param {Y.Doc} doc
+   * @param {{outdatedTimeout: number}} options
    */
-  constructor (doc) {
+  constructor (doc, options = { outdatedTimeout: 30000 }) {
     super()
     this.doc = doc
+    this.options = options
     /**
      * @type {number}
      */
@@ -58,7 +60,7 @@ export class Awareness extends Observable {
     this.meta = new Map()
     this._checkInterval = /** @type {any} */ (setInterval(() => {
       const now = time.getUnixTime()
-      if (this.getLocalState() !== null && (outdatedTimeout / 2 <= now - /** @type {{lastUpdated:number}} */ (this.meta.get(this.clientID)).lastUpdated)) {
+      if (this.getLocalState() !== null && (this.options.outdatedTimeout / 2 <= now - /** @type {{lastUpdated:number}} */ (this.meta.get(this.clientID)).lastUpdated)) {
         // renew local clock
         this.setLocalState(this.getLocalState())
       }
@@ -67,14 +69,14 @@ export class Awareness extends Observable {
        */
       const remove = []
       this.meta.forEach((meta, clientid) => {
-        if (clientid !== this.clientID && outdatedTimeout <= now - meta.lastUpdated && this.states.has(clientid)) {
+        if (clientid !== this.clientID && this.options.outdatedTimeout <= now - meta.lastUpdated && this.states.has(clientid)) {
           remove.push(clientid)
         }
       })
       if (remove.length > 0) {
         removeAwarenessStates(this, remove, 'timeout')
       }
-    }, math.floor(outdatedTimeout / 10)))
+    }, math.floor(this.options.outdatedTimeout / 10)))
     doc.on('destroy', () => {
       this.destroy()
     })
