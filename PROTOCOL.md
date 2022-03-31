@@ -97,5 +97,15 @@ function readMessage (buffer) {
 
 ```
 
+### Handling read-only users
 
+Yjs itself doesn't distinguish between read-only and read-write users. However, you can enforce that no modifying operations are accepted by the server/peer if the client doesn't have write-access.
 
+It suffices to read the first two bytes in order to determine whether a message should be accepted from a read-only user.
+
+* `[0, 0, ..]` is a SyncStep1. It is request to receive the missing state (it contains a state-vector that the server uses to compute the missing updates)
+* `[0, 1, ..]` is SyncStep2, which is the reply to a SyncStep1. It contains the missing updates. You want to ignore this message as it contains document updates.
+* `[0, 2, ..]` is a regular document update message.
+* `[1, ..]` Awareness message. This information is only used to represent shared cursors and the name of each user. However, with enough malice intention you could assign other users temporarily false identities.
+
+It suffices to block messages that start with `[0, 1, ..]` or `[0, 2, ..]`. Optionally, awareness can be disabled by blocking `[1, ..]`.
