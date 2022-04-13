@@ -1,5 +1,5 @@
 # Yjs Protocols
-> Binary encoding protocols for *syncing*, *awareness*, and *history inforamtion*
+> Binary encoding protocols for *syncing*, *awareness*, and *history information*
 
 This API is unstable and subject to change.
 
