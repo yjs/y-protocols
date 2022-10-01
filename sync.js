@@ -107,7 +107,7 @@ export const readUpdate = readSyncStep2
 
 /**
  * @param {decoding.Decoder} decoder A message received from another client
- * @param {encoding.Encoder} encoder The reply message. Will not be sent if empty.
+ * @param {encoding.Encoder} encoder The reply message. Does not need to be sent if empty.
  * @param {Y.Doc} doc
  * @param {any} transactionOrigin
  */
