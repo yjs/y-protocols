@@ -156,6 +156,11 @@ export class Awareness extends Observable {
   }
 }
 
+/**
+ * A state encoder that serializes state into JSON.
+ *
+ * This is the default strategy used in this package.
+ */
 export class DefaultAwarenessStateEncoder {
   /**
    * Encode an awareness state entry
@@ -176,6 +181,9 @@ export class DefaultAwarenessStateEncoder {
   }
 }
 
+/**
+ * A state encoder that serializes state into a binary format.
+ */
 export class BinaryAwarenessStateEncoder {
   /**
    * Encode an awareness state entry
