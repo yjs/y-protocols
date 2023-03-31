@@ -47,6 +47,7 @@
     "./sync.js": "./sync.js",
     "./dist/sync.cjs": "./dist/sync.cjs",
     "./sync": {
+      "types": "./sync.d.ts",
       "module": "./sync.js",
       "import": "./sync.js",
       "require": "./dist/sync.cjs"
@@ -54,6 +55,7 @@
     "./awareness.js": "./awareness.js",
     "./dist/awareness.cjs": "./dist/awareness.cjs",
     "./awareness": {
+      "types": "./awareness.d.ts",
       "module": "./awareness.js",
       "import": "./awareness.js",
       "require": "./dist/awareness.cjs"
@@ -61,6 +63,7 @@
     "./auth.js": "./auth.js",
     "./dist/auth.cjs": "./dist/auth.cjs",
     "./auth": {
+      "types": "./auth.d.ts",
       "module": "./auth.js",
       "import": "./auth.js",
       "require": "./dist/auth.cjs"
