@@ -19,5 +19,5 @@
     "allowSyntheticDefaultImports": true
   },
   "include": ["./*.js"],
-  "exclude": ["./dist"]
+  "exclude": ["./dist", "./node_modules"]
 }
