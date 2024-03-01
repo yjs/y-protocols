@@ -32,7 +32,8 @@ remote clients don't mark it as offline.
 #### awarenessProtocol.Awareness Class
 
 ```js
-const awareness = new awarenessProtocol.Awareness()
+const ydoc = new Y.Doc()
+const awareness = new awarenessProtocol.Awareness(ydoc)
 ```
 
 <dl>
