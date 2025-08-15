@@ -70,7 +70,7 @@
     }
   },
   "dependencies": {
-    "lib0": "^0.2.85"
+    "lib0": "^0.2.114"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^25.0.4",
