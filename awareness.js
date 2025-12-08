@@ -38,7 +38,7 @@ export const outdatedTimeout = 30000
  * @extends {ObservableV2<{
  *   destroy: (awareness:Awareness)=>any,
  *   update: (updates: { added: number[], updated: number[], removed: number[] }, origin: any) => any,
- *   change: (changes: { added: number[], updated: number[], removed: number[] }, origin: any) => any 
+ *   change: (changes: { added: number[], updated: number[], removed: number[] }, origin: any) => any
  * }>}
  */
 export class Awareness extends ObservableV2 {
