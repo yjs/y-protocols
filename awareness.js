@@ -6,7 +6,7 @@ import * as encoding from 'lib0/encoding'
 import * as decoding from 'lib0/decoding'
 import * as time from 'lib0/time'
 import * as math from 'lib0/math'
-import { Observable } from 'lib0/observable'
+import { ObservableV2 } from 'lib0/observable'
 import * as f from 'lib0/function'
 import * as Y from 'yjs' // eslint-disable-line
 
@@ -34,9 +34,14 @@ export const outdatedTimeout = 30000
  *
  * Awareness states must be updated every 30 seconds. Otherwise the Awareness instance will delete the client state.
  *
- * @extends {Observable<string>}
+ * @todo migrate to observable v2
+ * @extends {ObservableV2<{
+ *   destroy: (awareness:Awareness)=>any,
+ *   update: (updates: { added: number[], updated: number[], removed: number[] }, origin: any) => any,
+ *   change: (changes: { added: number[], updated: number[], removed: number[] }, origin: any) => any 
+ * }>}
  */
-export class Awareness extends Observable {
+export class Awareness extends ObservableV2 {
   /**
    * @param {Y.Doc} doc
    */
