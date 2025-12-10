@@ -17,8 +17,8 @@
     "clean": "rm -rf dist *.d.ts */*.d.ts *.d.ts.map */*.d.ts.map",
     "dist": "rm -rf dist && rollup -c",
     "test": "npm run lint && npm run dist && node dist/test.cjs",
-    "lint": "standard && tsc",
-    "types": "tsc --outDir .",
+    "lint": "standard && tsc --skipLibCheck",
+    "types": "tsc --outDir . --skipLibCheck",
     "debug": "rollup -c && concurrently 'rollup -wc' 'http-server -o test.html'",
     "preversion": "npm run dist && npm run test && npm run types",
     "postpublish": "npm run clean"
@@ -80,10 +80,10 @@
     "rollup": "^3.29.2",
     "standard": "^12.0.1",
     "typescript": "^5.8.3",
-    "yjs": "^13.6.26"
+    "@y/y": "^14.0.0-16"
   },
   "peerDependencies": {
-    "yjs": "^14.0.0-1 || ^14 || ^13"
+    "@y/y": "^14.0.0-16 || ^14"
   },
   "engines": {
     "npm": ">=8.0.0",

@@ -1,5 +1,5 @@
 
-import * as Y from 'yjs' // eslint-disable-line
+import * as Y from '@y/y' // eslint-disable-line
 import * as encoding from 'lib0/encoding'
 import * as decoding from 'lib0/decoding'
 
