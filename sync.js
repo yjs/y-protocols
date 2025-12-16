@@ -77,11 +77,13 @@ export const readSyncStep1 = (decoder, encoder, doc) =>
  * @param {decoding.Decoder} decoder
  * @param {Y.Doc} doc
  * @param {any} transactionOrigin
+ * @param {(error:Error)=>any} [errorHandler]
  */
-export const readSyncStep2 = (decoder, doc, transactionOrigin) => {
+export const readSyncStep2 = (decoder, doc, transactionOrigin, errorHandler) => {
   try {
     Y.applyUpdate(doc, decoding.readVarUint8Array(decoder), transactionOrigin)
   } catch (error) {
+    if (errorHandler != null) errorHandler(/** @type {Error} */ (error))
     // This catches errors that are thrown by event handlers
     console.error('Caught error while handling a Yjs update', error)
   }
@@ -102,6 +104,7 @@ export const writeUpdate = (encoder, update) => {
  * @param {decoding.Decoder} decoder
  * @param {Y.Doc} doc
  * @param {any} transactionOrigin
+ * @param {(error:Error)=>any} [errorHandler]
  */
 export const readUpdate = readSyncStep2
 
@@ -110,18 +113,19 @@ export const readUpdate = readSyncStep2
  * @param {encoding.Encoder} encoder The reply message. Does not need to be sent if empty.
  * @param {Y.Doc} doc
  * @param {any} transactionOrigin
+ * @param {(error:Error)=>any} [errorHandler] Optional error handler that catches errors when reading Yjs messages.
  */
-export const readSyncMessage = (decoder, encoder, doc, transactionOrigin) => {
+export const readSyncMessage = (decoder, encoder, doc, transactionOrigin, errorHandler) => {
   const messageType = decoding.readVarUint(decoder)
   switch (messageType) {
     case messageYjsSyncStep1:
       readSyncStep1(decoder, encoder, doc)
       break
     case messageYjsSyncStep2:
-      readSyncStep2(decoder, doc, transactionOrigin)
+      readSyncStep2(decoder, doc, transactionOrigin, errorHandler)
       break
     case messageYjsUpdate:
-      readUpdate(decoder, doc, transactionOrigin)
+      readUpdate(decoder, doc, transactionOrigin, errorHandler)
       break
     default:
       throw new Error('Unknown message type')
