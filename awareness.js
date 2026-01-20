@@ -162,6 +162,54 @@ export class Awareness extends ObservableV2 {
 }
 
 /**
+ * A state encoder that serializes state into JSON.
+ *
+ * This is the default strategy used in this package.
+ */
+export class DefaultAwarenessStateEncoder {
+  /**
+   * Encode an awareness state entry
+   * @param {encoding.Encoder} encoder
+   * @param {any} update
+   */
+  static encodeState (encoder, update) {
+    encoding.writeVarString(encoder, JSON.stringify(update))
+  }
+
+  /**
+   * Decode an awareness state entry
+   * @param {decoding.Decoder} decoder
+   * @returns {string}
+   */
+  static decodeState (decoder) {
+    return JSON.parse(decoding.readVarString(decoder))
+  }
+}
+
+/**
+ * A state encoder that serializes state into a binary format.
+ */
+export class BinaryAwarenessStateEncoder {
+  /**
+   * Encode an awareness state entry
+   * @param {encoding.Encoder} encoder
+   * @param {any} update
+   */
+  static encodeState (encoder, update) {
+    encoding.writeAny(encoder, update)
+  }
+
+  /**
+   * Decode an awareness state entry
+   * @param {decoding.Decoder} decoder
+   * @returns {any}
+   */
+  static decodeState (decoder) {
+    return decoding.readAny(decoder)
+  }
+}
+
+/**
  * Mark (remote) clients as inactive and remove them from the list of active peers.
  * This change will be propagated to remote clients.
  *
@@ -194,9 +242,10 @@ export const removeAwarenessStates = (awareness, clients, origin) => {
 /**
  * @param {Awareness} awareness
  * @param {Array<number>} clients
+ * @param {typeof DefaultAwarenessStateEncoder|typeof BinaryAwarenessStateEncoder} stateEncoder The encoder to use for encoding and decoding each state entry
  * @return {Uint8Array}
  */
-export const encodeAwarenessUpdate = (awareness, clients, states = awareness.states) => {
+export const encodeAwarenessUpdate = (awareness, clients, states = awareness.states, stateEncoder = DefaultAwarenessStateEncoder) => {
   const len = clients.length
   const encoder = encoding.createEncoder()
   encoding.writeVarUint(encoder, len)
@@ -206,7 +255,7 @@ export const encodeAwarenessUpdate = (awareness, clients, states = awareness.sta
     const clock = /** @type {MetaClientState} */ (awareness.meta.get(clientID)).clock
     encoding.writeVarUint(encoder, clientID)
     encoding.writeVarUint(encoder, clock)
-    encoding.writeVarString(encoder, JSON.stringify(state))
+    stateEncoder.encodeState(encoder, state)
   }
   return encoding.toUint8Array(encoder)
 }
@@ -219,9 +268,10 @@ export const encodeAwarenessUpdate = (awareness, clients, states = awareness.sta
  *
  * @param {Uint8Array} update
  * @param {function(any):any} modify
+ * @param {typeof DefaultAwarenessStateEncoder|typeof BinaryAwarenessStateEncoder} stateEncoder The encoder to use for encoding and decoding each state entry
  * @return {Uint8Array}
  */
-export const modifyAwarenessUpdate = (update, modify) => {
+export const modifyAwarenessUpdate = (update, modify, stateEncoder = DefaultAwarenessStateEncoder) => {
   const decoder = decoding.createDecoder(update)
   const encoder = encoding.createEncoder()
   const len = decoding.readVarUint(decoder)
@@ -229,11 +279,11 @@ export const modifyAwarenessUpdate = (update, modify) => {
   for (let i = 0; i < len; i++) {
     const clientID = decoding.readVarUint(decoder)
     const clock = decoding.readVarUint(decoder)
-    const state = JSON.parse(decoding.readVarString(decoder))
+    const state = stateEncoder.decodeState(decoder)
     const modifiedState = modify(state)
     encoding.writeVarUint(encoder, clientID)
     encoding.writeVarUint(encoder, clock)
-    encoding.writeVarString(encoder, JSON.stringify(modifiedState))
+    stateEncoder.encodeState(encoder, modifiedState)
   }
   return encoding.toUint8Array(encoder)
 }
@@ -242,8 +292,9 @@ export const modifyAwarenessUpdate = (update, modify) => {
  * @param {Awareness} awareness
  * @param {Uint8Array} update
  * @param {any} origin This will be added to the emitted change event
+ * @param {typeof DefaultAwarenessStateEncoder|typeof BinaryAwarenessStateEncoder} stateEncoder The encoder to use for encoding each state entry
  */
-export const applyAwarenessUpdate = (awareness, update, origin) => {
+export const applyAwarenessUpdate = (awareness, update, origin, stateEncoder = DefaultAwarenessStateEncoder) => {
   const decoder = decoding.createDecoder(update)
   const timestamp = time.getUnixTime()
   const added = []
@@ -254,7 +305,7 @@ export const applyAwarenessUpdate = (awareness, update, origin) => {
   for (let i = 0; i < len; i++) {
     const clientID = decoding.readVarUint(decoder)
     let clock = decoding.readVarUint(decoder)
-    const state = JSON.parse(decoding.readVarString(decoder))
+    const state = stateEncoder.decodeState(decoder)
     const clientMeta = awareness.meta.get(clientID)
     const prevState = awareness.states.get(clientID)
     const currClock = clientMeta === undefined ? 0 : clientMeta.clock

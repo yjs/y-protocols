@@ -4,9 +4,11 @@ import * as t from 'lib0/testing'
 import * as awareness from './awareness'
 
 /**
- * @param {t.TestCase} tc
+ * @param {typeof awareness.DefaultAwarenessStateEncoder|typeof awareness.BinaryAwarenessStateEncoder} encoder
+ * @param {typeof awareness.DefaultAwarenessStateEncoder|typeof awareness.BinaryAwarenessStateEncoder} decoder
+ * @return {function(t.TestCase): void}
  */
-export const testAwareness = tc => {
+const testAwarenessWithEncoding = (encoder = awareness.DefaultAwarenessStateEncoder, decoder = awareness.DefaultAwarenessStateEncoder) => tc => {
   const doc1 = new Y.Doc()
   doc1.clientID = 0
   const doc2 = new Y.Doc()
@@ -14,8 +16,8 @@ export const testAwareness = tc => {
   const aw1 = new awareness.Awareness(doc1)
   const aw2 = new awareness.Awareness(doc2)
   aw1.on('update', /** @param {any} p */ ({ added, updated, removed }) => {
-    const enc = awareness.encodeAwarenessUpdate(aw1, added.concat(updated).concat(removed))
-    awareness.applyAwarenessUpdate(aw2, enc, 'custom')
+    const enc = awareness.encodeAwarenessUpdate(aw1, added.concat(updated).concat(removed), aw1.states, encoder)
+    awareness.applyAwarenessUpdate(aw2, enc, 'custom', decoder)
   })
   let lastChangeLocal = /** @type {any} */ (null)
   aw1.on('change', /** @param {any} change */ change => {
@@ -51,3 +53,8 @@ export const testAwareness = tc => {
   t.compare(aw1.getStates().get(0), undefined)
   t.compare(lastChangeLocal, lastChange)
 }
+
+export const testAwarenessWithBinary = testAwarenessWithEncoding(awareness.BinaryAwarenessStateEncoder, awareness.BinaryAwarenessStateEncoder)
+export const testAwarenessWithDefault = testAwarenessWithEncoding(awareness.DefaultAwarenessStateEncoder, awareness.DefaultAwarenessStateEncoder)
+export const testAwarenessBackwardsCompatDecoder = testAwarenessWithEncoding(awareness.DefaultAwarenessStateEncoder, undefined)
+export const testAwarenessBackwardsCompatEncoder = testAwarenessWithEncoding(undefined, awareness.DefaultAwarenessStateEncoder)
