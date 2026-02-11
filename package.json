@@ -8,18 +8,18 @@
     "url": "https://github.com/sponsors/dmonad"
   },
   "files": [
-    "dist/*",
-    "auth.*",
-    "sync.*",
-    "awareness.*"
+    "types/**/*.d.ts",
+    "!types/**/*test.d.ts",
+    "src/**/*.js",
+    "!src/**/*test.js"
   ],
   "scripts": {
-    "clean": "rm -rf dist *.d.ts */*.d.ts *.d.ts.map */*.d.ts.map",
-    "dist": "npm run clean && rollup -c",
-    "test": "npm run lint && npm run dist && node dist/test.cjs",
+    "clean": "rm -rf dist types",
+    "dist": "npm run clean && npm run types",
+    "test": "node --expose-gc src/test.js && npm run lint",
+    "debug": "node --inspect-brk --expose-gc src/test.js",
     "lint": "standard && tsc --skipLibCheck",
     "types": "tsc --outDir . --skipLibCheck",
-    "debug": "rollup -c && concurrently 'rollup -wc' 'http-server -o test.html'",
     "preversion": "npm run dist && npm run types",
     "postpublish": "npm run clean"
   },
@@ -43,47 +43,31 @@
   },
   "homepage": "https://github.com/yjs/y-protocols#readme",
   "exports": {
-    "./package.json": "./package.json",
-    "./sync.js": "./sync.js",
-    "./dist/sync.cjs": "./dist/sync.cjs",
     "./sync": {
-      "types": "./sync.d.ts",
-      "module": "./sync.js",
-      "import": "./sync.js",
-      "require": "./dist/sync.cjs"
+      "types": "./types/sync.d.ts",
+      "default": "./src/sync.js"
     },
-    "./awareness.js": "./awareness.js",
-    "./dist/awareness.cjs": "./dist/awareness.cjs",
     "./awareness": {
-      "types": "./awareness.d.ts",
-      "module": "./awareness.js",
-      "import": "./awareness.js",
-      "require": "./dist/awareness.cjs"
+      "types": "./types/awareness.d.ts",
+      "default": "./src/awareness.js"
     },
-    "./auth.js": "./auth.js",
-    "./dist/auth.cjs": "./dist/auth.cjs",
     "./auth": {
-      "types": "./auth.d.ts",
-      "module": "./auth.js",
-      "import": "./auth.js",
-      "require": "./dist/auth.cjs"
+      "types": "./types/auth.d.ts",
+      "default": "./src/auth.js"
     }
   },
   "dependencies": {
-    "lib0": "^0.2.85"
+    "lib0": "^1.0.0-rc.1"
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^25.0.4",
-    "@rollup/plugin-node-resolve": "^15.2.1",
     "@types/node": "^20.6.2",
+    "@y/y": "^14.0.0-16",
     "concurrently": "^5.3.0",
-    "rollup": "^3.29.2",
-    "standard": "^12.0.1",
-    "typescript": "^5.8.3",
-    "@y/y": "^14.0.0-16"
+    "standard": "^17.1.2",
+    "typescript": "^5.9.3"
   },
   "peerDependencies": {
-    "@y/y": "^14.0.0-16 || ^14"
+    "@y/y": "*"
   },
   "engines": {
     "npm": ">=8.0.0",

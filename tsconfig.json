@@ -1,23 +1,22 @@
 {
   "compilerOptions": {
     /* Basic Options */
-    "target": "es2018",
-    "lib": ["es2018", "dom"],                             /* Specify library files to be included in the compilation. */
+    "target": "esnext",
+    "module": "nodenext",
+    "lib": ["ESNext", "dom"],                             /* Specify library files to be included in the compilation. */
     "allowJs": true,                       /* Allow javascript files to be compiled. */
     "checkJs": true,                       /* Report errors in .js files. */
-    // "jsx": "preserve",                     /* Specify JSX code generation: 'preserve', 'react-native', or 'react'. */
     "declaration": true,                   /* Generates corresponding '.d.ts' file. */
     "declarationMap": true,                /* Generates a sourcemap for each corresponding '.d.ts' file. */
-    // "outFile": "./index.js",                       /* Concatenate and emit output to single file. */
-    "outDir": "dist", // this is overritten by `npm run types`
-    "baseUrl": "./",                       /* Base directory to resolve non-absolute module names. */
-    // "rootDir": "./",                       /* Specify the root directory of input files. Use to control the output directory structure with --outDir. */
+    "outDir": "./types", // this is overritten by `npm run types`
+    "baseUrl": "./src",                       /* Base directory to resolve non-absolute module names. */
+    "rootDir": "./src",                       /* Specify the root directory of input files. Use to control the output directory structure with --outDir. */
     "emitDeclarationOnly": true,
     "strict": true,
     "noImplicitAny": true,
-    "moduleResolution": "node",
+    "moduleResolution": "nodenext",
     "allowSyntheticDefaultImports": true
   },
-  "include": ["./*.js"],
+  "include": ["./src"],
   "exclude": ["./dist", "./node_modules"]
 }
