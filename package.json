@@ -19,7 +19,7 @@
     "test": "node --expose-gc src/test.js && npm run lint",
     "debug": "node --inspect-brk --expose-gc src/test.js",
     "lint": "standard && tsc --skipLibCheck",
-    "types": "tsc --outDir . --skipLibCheck",
+    "types": "tsc --skipLibCheck",
     "preversion": "npm run dist && npm run types",
     "postpublish": "npm run clean"
   },
