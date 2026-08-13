@@ -230,7 +230,7 @@ export const modifyAwarenessUpdate = (update, modify) => {
     const clientID = decoding.readVarUint(decoder)
     const clock = decoding.readVarUint(decoder)
     const state = JSON.parse(decoding.readVarString(decoder))
-    const modifiedState = modify(state)
+    const modifiedState = modify(state, clientID, clock)
     encoding.writeVarUint(encoder, clientID)
     encoding.writeVarUint(encoder, clock)
     encoding.writeVarString(encoder, JSON.stringify(modifiedState))
