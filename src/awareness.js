@@ -83,10 +83,19 @@ export class Awareness extends ObservableV2 {
     doc.on('destroy', () => {
       this.destroy()
     })
+    /**
+     * Yjs reassigns `doc.clientID` when it detects a collision. Follow it.
+     * @type {() => void}
+     */
+    this._applyDocClientId = () => {
+      applyDocClientId(this)
+    }
+    doc.on('afterTransactionCleanup', this._applyDocClientId)
     this.setLocalState({})
   }
 
   destroy () {
+    this.doc.off('afterTransactionCleanup', this._applyDocClientId)
     this.emit('destroy', [this])
     this.setLocalState(null)
     super.destroy()
@@ -97,6 +106,7 @@ export class Awareness extends ObservableV2 {
    * @return {Object<string,any>|null}
    */
   getLocalState () {
+    applyDocClientId(this)
     return this.states.get(this.clientID) || null
   }
 
@@ -162,6 +172,42 @@ export class Awareness extends ObservableV2 {
 }
 
 /**
+ * Yjs reassigns `doc.clientID` when it detects a collision. Awareness snapshots
+ * that id in the constructor, so move local state over to the new id (do not
+ * skip missing meta: that leaves peers out of sync).
+ *
+ * @param {Awareness} awareness
+ */
+const applyDocClientId = awareness => {
+  const docClientID = awareness.doc.clientID
+  if (awareness.clientID === docClientID) {
+    return
+  }
+  const prevLocalState = awareness.states.get(awareness.clientID) || null
+  if (prevLocalState !== null) {
+    awareness.setLocalState(null)
+  }
+  awareness.clientID = docClientID
+  if (prevLocalState !== null) {
+    // A brand-new id starts at clock 0, which remotes treat as already-known
+    // and ignore. Seed the constructor's clock 0 so this publish is clock 1.
+    awareness.meta.set(docClientID, {
+      clock: 0,
+      lastUpdated: 0
+    })
+    awareness.setLocalState(prevLocalState)
+  } else if (!awareness.meta.has(docClientID)) {
+    // setLocalState(null) keeps meta on the old id only. Without this, encode of
+    // the new id (y-websocket / y-webrtc pass doc.clientID or awareness.clientID)
+    // still throws on .clock.
+    awareness.meta.set(docClientID, {
+      clock: 0,
+      lastUpdated: 0
+    })
+  }
+}
+
+/**
  * Mark (remote) clients as inactive and remove them from the list of active peers.
  * This change will be propagated to remote clients.
  *
@@ -170,6 +216,7 @@ export class Awareness extends ObservableV2 {
  * @param {any} origin
  */
 export const removeAwarenessStates = (awareness, clients, origin) => {
+  applyDocClientId(awareness)
   const removed = []
   for (let i = 0; i < clients.length; i++) {
     const clientID = clients[i]
@@ -197,6 +244,7 @@ export const removeAwarenessStates = (awareness, clients, origin) => {
  * @return {Uint8Array}
  */
 export const encodeAwarenessUpdate = (awareness, clients, states = awareness.states) => {
+  applyDocClientId(awareness)
   const len = clients.length
   const encoder = encoding.createEncoder()
   encoding.writeVarUint(encoder, len)
